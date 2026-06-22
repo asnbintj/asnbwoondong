@@ -1158,121 +1158,123 @@
         .guide-stat-desc { font-size: 12px; color: #667; line-height: 1.6; }
 
         /* ===================================================
-           🌙 나이트 스타디움 테마 오버라이드
+           ☀️ 운동회 데이 테마 (Sunny Sports Day)
            =================================================== */
         :root {
-            --ns-bg:      #0f1923;
-            --ns-surface: #1a2535;
-            --ns-surface2:#1f2d40;
-            --ns-border:  #2a3d55;
-            --ns-primary: #00d4ff;
-            --ns-accent:  #39ff14;
-            --ns-text:    #e8f4fd;
-            --ns-muted:   #7a9bb5;
-            --ns-dim:     #3a5570;
+            --ns-bg:      rgba(240,250,243,0.96);
+            --ns-surface: rgba(255,255,255,0.90);
+            --ns-surface2:rgba(245,252,246,0.85);
+            --ns-border:  rgba(46,125,87,0.22);
+            --ns-primary: #2e7d52;
+            --ns-accent:  #e09618;
+            --ns-text:    #1a2e20;
+            --ns-muted:   #4d7a5e;
+            --ns-dim:     #8fac9a;
         }
 
         body {
-            background: linear-gradient(160deg, #070e17 0%, #0f1923 40%, #0a1628 100%);
+            background: linear-gradient(rgba(255,255,255,0.18),rgba(255,255,255,0.18)), url('bg.jpg') center/cover no-repeat fixed;
+            background-color: #c8e6c9;
             color: var(--ns-text);
         }
 
         /* 로그인 */
-        .login-screen { background: linear-gradient(160deg, #070e17 0%, #0f1923 50%, #0a1628 100%); }
+        .login-screen { background: linear-gradient(rgba(255,255,255,0.28),rgba(255,255,255,0.22)), url('bg.jpg') center/cover no-repeat fixed; background-color:#c8e6c9; }
         .login-box {
-            background: var(--ns-surface);
-            border: 1px solid rgba(0,212,255,0.25);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7), 0 0 60px rgba(0,212,255,0.08);
+            background: rgba(255,255,255,0.93);
+            border: 1px solid rgba(46,125,87,0.30);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12), 0 0 60px rgba(46,125,87,0.08);
+            backdrop-filter: blur(14px);
         }
-        .login-box h1 { color: var(--ns-primary); text-shadow: 0 0 20px rgba(0,212,255,0.5); }
+        .login-box h1 { color: var(--ns-primary); text-shadow: none; }
         .form-group label { color: var(--ns-muted); }
         .form-group input {
-            background: var(--ns-bg); border-color: var(--ns-border); color: var(--ns-text);
+            background: rgba(255,255,255,0.95); border-color: rgba(46,125,87,0.30); color: var(--ns-text);
         }
         .form-group input::placeholder { color: var(--ns-dim); }
         .form-group input:focus {
-            border-color: var(--ns-primary); box-shadow: 0 0 0 3px rgba(0,212,255,0.15);
+            border-color: var(--ns-primary); box-shadow: 0 0 0 3px rgba(46,125,87,0.15);
         }
         textarea {
-            background: var(--ns-bg) !important; border-color: var(--ns-border) !important;
+            background: rgba(255,255,255,0.95) !important; border-color: rgba(46,125,87,0.30) !important;
             color: var(--ns-text) !important;
         }
         textarea::placeholder { color: var(--ns-dim); }
-        select { background: var(--ns-bg); border-color: var(--ns-border); color: var(--ns-text); }
+        select { background: rgba(255,255,255,0.95); border-color: rgba(46,125,87,0.30); color: var(--ns-text); }
 
         /* 버튼 */
-        .btn-primary { background: linear-gradient(135deg,#00d4ff,#0088cc); color:#0a1628; font-weight:700; }
-        .btn-primary:hover { background:linear-gradient(135deg,#33ddff,#00aaee); box-shadow:0 5px 20px rgba(0,212,255,.45); transform:translateY(-2px); }
-        .btn-primary:disabled { background:var(--ns-border); color:var(--ns-dim); transform:none; box-shadow:none; }
-        .btn-secondary { background:var(--ns-surface2); color:var(--ns-muted); border:1px solid var(--ns-border); margin-top:10px; }
-        .btn-secondary:hover { background:var(--ns-border); color:var(--ns-text); }
-        .btn-success { background:linear-gradient(135deg,#39ff14,#20cc00); color:#0a1628; font-weight:700; }
-        .btn-success:hover { background:linear-gradient(135deg,#55ff30,#35dd10); box-shadow:0 5px 20px rgba(57,255,20,.35); }
-        .btn-danger { background:linear-gradient(135deg,#ff4757,#cc2233); }
-        .btn-danger:hover { background:linear-gradient(135deg,#ff6b7a,#ee3344); box-shadow:0 5px 15px rgba(255,71,87,.4); }
+        .btn-primary { background: linear-gradient(135deg,#2e7d52,#1a5c38); color:#fff; font-weight:700; }
+        .btn-primary:hover { background:linear-gradient(135deg,#3d9e68,#2e7d52); box-shadow:0 5px 20px rgba(46,125,87,.40); transform:translateY(-2px); }
+        .btn-primary:disabled { background:#ccc; color:#888; transform:none; box-shadow:none; }
+        .btn-secondary { background:rgba(255,255,255,0.80); color:var(--ns-muted); border:1px solid var(--ns-border); margin-top:10px; }
+        .btn-secondary:hover { background:rgba(240,252,244,0.95); color:var(--ns-text); }
+        .btn-success { background:linear-gradient(135deg,#3dbb6a,#2a9950); color:#fff; font-weight:700; }
+        .btn-success:hover { background:linear-gradient(135deg,#50d07e,#3dbb6a); box-shadow:0 5px 20px rgba(46,125,87,.35); }
+        .btn-danger { background:linear-gradient(135deg,#e84040,#c22020); }
+        .btn-danger:hover { background:linear-gradient(135deg,#f06060,#e04040); box-shadow:0 5px 15px rgba(220,50,50,.35); }
 
         /* 헤더 */
-        .header { background:var(--ns-surface); border:1px solid var(--ns-border); box-shadow:0 2px 20px rgba(0,0,0,.5); }
-        .header h1 { color:var(--ns-primary); text-shadow:0 0 15px rgba(0,212,255,.35); }
+        .header { background:rgba(255,255,255,0.88); border:1px solid var(--ns-border); box-shadow:0 2px 20px rgba(0,0,0,.06); backdrop-filter:blur(10px); }
+        .header h1 { color:var(--ns-primary); text-shadow:none; }
         .user-info { color:var(--ns-muted); }
         .user-info strong { color:var(--ns-primary); }
 
         /* 네비게이션 */
         .nav-tabs { border-bottom:2px solid var(--ns-border); }
-        .nav-tab { background:var(--ns-surface); color:var(--ns-muted); }
-        .nav-tab:hover { color:var(--ns-primary); background:var(--ns-surface2); }
-        .nav-tab.active { color:var(--ns-primary); border-bottom-color:var(--ns-primary); text-shadow:0 0 10px rgba(0,212,255,.4); }
+        .nav-tab { background:rgba(255,255,255,0.82); color:var(--ns-muted); }
+        .nav-tab:hover { color:var(--ns-primary); background:rgba(240,252,244,0.95); }
+        .nav-tab.active { color:var(--ns-primary); border-bottom-color:var(--ns-primary); text-shadow:none; }
 
         /* 콘텐츠 패널 */
-        .content { background:var(--ns-surface); border:1px solid var(--ns-border); box-shadow:0 2px 20px rgba(0,0,0,.4); color:var(--ns-text); }
+        .content { background:rgba(255,255,255,0.88); border:1px solid var(--ns-border); box-shadow:0 2px 20px rgba(0,0,0,.05); color:var(--ns-text); backdrop-filter:blur(8px); }
         .content h2, .content h3, .screen h2, .screen h3 { color:var(--ns-text); }
 
         /* 선수 카드 */
-        .player-card { background:var(--ns-surface2); border-color:var(--ns-border); }
-        .player-card.male   { background:#0b1e30; border-color:#1a3d5a; }
-        .player-card.female { background:#1e0b28; border-color:#3d1a55; }
-        .player-card:hover  { border-color:var(--ns-primary); box-shadow:0 5px 25px rgba(0,212,255,.2),0 0 40px rgba(0,212,255,.08); }
-        .player-card.selected { background:#0a1f30; border-color:var(--ns-accent); box-shadow:0 0 15px rgba(57,255,20,.2); }
+        .player-card { background:rgba(255,255,255,0.82); border-color:var(--ns-border); }
+        .player-card.male   { background:rgba(225,242,254,0.85); border-color:rgba(30,100,180,0.25); }
+        .player-card.female { background:rgba(252,228,242,0.85); border-color:rgba(180,30,120,0.22); }
+        .player-card:hover  { border-color:var(--ns-primary); box-shadow:0 5px 25px rgba(46,125,87,.22); }
+        .player-card.selected { background:rgba(220,248,230,0.90); border-color:var(--ns-accent); box-shadow:0 0 15px rgba(224,150,24,.20); }
         .player-name   { color:var(--ns-text); }
         .player-gender { color:var(--ns-muted); }
         .player-stats  { color:var(--ns-primary); }
-        .player-photo  { background:var(--ns-bg); }
-        .player-nickname-badge { background:linear-gradient(135deg,var(--ns-primary),#0077aa); color:#0a1628; }
+        .player-photo  { background:rgba(240,252,244,0.80); }
+        .player-nickname-badge { background:linear-gradient(135deg,var(--ns-primary),#1a5c38); color:#fff; }
 
         /* 폼 섹션 */
-        .form-section { background:var(--ns-surface2); border:1px solid var(--ns-border); }
+        .form-section { background:rgba(245,252,246,0.88); border:1px solid var(--ns-border); }
         .form-section h2, .form-section h3 { color:var(--ns-text); }
         .stat-input-group label { color:var(--ns-muted); }
         .stat-value { color:var(--ns-primary); }
         .radio-group label { color:var(--ns-text); }
 
         /* 선택된 선수 */
-        .selected-players { background:#091828; border:1px solid var(--ns-border); }
+        .selected-players { background:rgba(240,252,244,0.88); border:1px solid var(--ns-border); }
         .selected-players h3 { color:var(--ns-primary); }
-        .player-chip { background:var(--ns-surface2); border:2px solid var(--ns-primary); color:var(--ns-primary); }
+        .player-chip { background:rgba(255,255,255,0.90); border:2px solid var(--ns-primary); color:var(--ns-primary); }
         .player-chip button { color:var(--ns-primary); }
 
         /* 팀 박스 */
-        .team-box { background:var(--ns-surface2); border-left-color:var(--ns-primary); }
+        .team-box { background:rgba(245,252,246,0.88); border-left-color:var(--ns-primary); }
         .team-box h2 { color:var(--ns-primary); }
         .team-box input { color:var(--ns-primary); background:transparent; border-bottom-color:var(--ns-border); }
         .team-stats { color:var(--ns-muted); }
-        .team-player { background:var(--ns-surface); border-color:var(--ns-border); color:var(--ns-text); }
-        .team-player-photo { background:var(--ns-bg); }
+        .team-player { background:rgba(255,255,255,0.90); border-color:var(--ns-border); color:var(--ns-text); }
+        .team-player-photo { background:rgba(240,252,244,0.80); }
         .team-player-name { color:var(--ns-text); }
 
         /* 야구 포지션 */
-        .baseball-field { background:linear-gradient(135deg,#0d2a1a 0%,#1a3d28 100%); }
-        .position { background:rgba(15,25,35,.95); border-color:var(--ns-border); }
+        .baseball-field { background:linear-gradient(135deg,rgba(100,180,120,0.90) 0%,rgba(50,140,80,0.90) 100%); }
+        .position { background:rgba(255,255,255,0.92); border-color:var(--ns-border); }
         .position-label { color:var(--ns-primary); }
-        .position-selector { background:var(--ns-bg); border-color:var(--ns-border); color:var(--ns-text); }
-        .position-player { background:var(--ns-surface); border-color:var(--ns-primary); color:var(--ns-primary); }
-        .unassigned-players { background:#1a1400; border:1px solid #665500; }
-        .unassigned-players h4 { color:#ffd700; }
-        .unassigned-chip { background:var(--ns-surface2); border-color:#ffd700; color:#ffd700; }
+        .position-selector { background:rgba(255,255,255,0.95); border-color:var(--ns-border); color:var(--ns-text); }
+        .position-player { background:rgba(240,252,244,0.95); border-color:var(--ns-primary); color:var(--ns-primary); }
+        .unassigned-players { background:rgba(255,250,220,0.90); border:1px solid rgba(200,160,0,0.40); }
+        .unassigned-players h4 { color:#8a6800; }
+        .unassigned-chip { background:rgba(255,255,255,0.90); border-color:rgba(200,160,0,0.60); color:#8a6800; }
 
         /* 모달 */
-        .modal-content { background:var(--ns-surface); border:1px solid var(--ns-border); box-shadow:0 20px 60px rgba(0,0,0,.85); color:var(--ns-text); }
+        .modal-content { background:rgba(255,255,255,0.95); border:1px solid var(--ns-border); box-shadow:0 20px 60px rgba(0,0,0,.18); color:var(--ns-text); backdrop-filter:blur(14px); }
         .modal-header { border-bottom-color:var(--ns-border); }
         .modal-header h2 { color:var(--ns-primary); }
         .close-btn { color:var(--ns-muted); }
@@ -1281,44 +1283,44 @@
         .player-detail-gender { color:var(--ns-muted); }
 
         /* 메시지 */
-        .message.success { background:#0a2010; color:var(--ns-accent); border-color:var(--ns-accent); }
-        .message.error   { background:#200a0a; color:#ff4757; border-color:#ff4757; }
-        .message.warning { background:#1a1400; color:#ffd700; border-color:#ffd700; }
+        .message.success { background:rgba(220,248,230,0.96); color:#1a5c38; border-color:rgba(46,125,87,0.45); }
+        .message.error   { background:rgba(255,220,220,0.96); color:#8b0000; border-color:rgba(200,50,50,0.45); }
+        .message.warning { background:rgba(255,248,210,0.96); color:#7a5000; border-color:rgba(200,160,0,0.45); }
 
         /* 파일 업로드 */
-        .file-input-label { background:linear-gradient(135deg,var(--ns-primary),#0088cc); color:#0a1628; }
-        .file-input-label:hover { background:linear-gradient(135deg,#33ddff,#00aaee); }
-        .photo-preview { background:var(--ns-bg); border:1px solid var(--ns-border); }
+        .file-input-label { background:linear-gradient(135deg,var(--ns-primary),#1a5c38); color:#fff; }
+        .file-input-label:hover { background:linear-gradient(135deg,#3d9e68,#2e7d52); }
+        .photo-preview { background:rgba(245,252,246,0.90); border:1px solid var(--ns-border); }
 
         /* 스피너 */
-        .spinner { border-color:var(--ns-border); border-top-color:var(--ns-primary); }
+        .spinner { border-color:rgba(46,125,87,0.20); border-top-color:var(--ns-primary); }
 
         /* 수정 요청 */
-        .request-card { background:var(--ns-surface2); border-color:#ffd700; }
-        .request-card.resolved { background:var(--ns-surface); border-color:var(--ns-border); }
+        .request-card { background:rgba(255,250,220,0.90); border-color:rgba(200,160,0,0.55); }
+        .request-card.resolved { background:rgba(245,252,246,0.88); border-color:var(--ns-border); }
         .stat-diff-label { color:var(--ns-muted); }
         .stat-diff-current { color:var(--ns-dim); }
         .stat-diff-arrow { color:var(--ns-primary); }
         .stat-diff-requested { color:var(--ns-text); }
 
         /* 로그인 알림 팝업 */
-        .login-alert-box { background:var(--ns-surface); border:1px solid rgba(0,212,255,.2); }
+        .login-alert-box { background:rgba(255,255,255,0.96); border:1px solid rgba(46,125,87,0.25); backdrop-filter:blur(14px); }
         .login-alert-title { color:var(--ns-primary); }
         .login-alert-msg { color:var(--ns-muted); }
-        .login-alert-btn { background:linear-gradient(135deg,var(--ns-primary),#0088cc); color:#0a1628; font-weight:700; }
-        .login-alert-btn:hover { background:linear-gradient(135deg,#33ddff,#00aaee); }
+        .login-alert-btn { background:linear-gradient(135deg,var(--ns-primary),#1a5c38); color:#fff; font-weight:700; }
+        .login-alert-btn:hover { background:linear-gradient(135deg,#3d9e68,#2e7d52); }
 
-        /* 나이트 스타디움 — 사용 안내 */
+        /* 운동회 데이 — 사용 안내 */
         .guide-item { border-color:var(--ns-border); }
-        .guide-header { background:var(--ns-surface2); color:var(--ns-text); }
-        .guide-header:hover { background:var(--ns-border); }
+        .guide-header { background:rgba(240,252,244,0.90); color:var(--ns-text); }
+        .guide-header:hover { background:rgba(220,248,230,0.95); }
         .guide-arrow { color:var(--ns-primary); }
-        .guide-body { background:var(--ns-surface); }
+        .guide-body { background:rgba(255,255,255,0.92); }
         .guide-list { color:var(--ns-muted); }
-        .guide-list code { background:rgba(0,212,255,.12); color:var(--ns-primary); }
-        .guide-tip { background:rgba(0,212,255,.07); border-left-color:var(--ns-primary); color:var(--ns-muted); }
+        .guide-list code { background:rgba(46,125,87,0.10); color:var(--ns-primary); }
+        .guide-tip { background:rgba(46,125,87,0.07); border-left-color:var(--ns-primary); color:var(--ns-muted); }
         .guide-stat-title { color:var(--ns-primary); }
-        .guide-stat-card { background:var(--ns-surface2); border-color:var(--ns-border); }
+        .guide-stat-card { background:rgba(245,252,246,0.88); border-color:var(--ns-border); }
         .guide-stat-name { color:var(--ns-text); }
         .guide-stat-desc { color:var(--ns-muted); }
 
@@ -1342,7 +1344,7 @@
             margin-bottom: 8px;
         }
         .match-card:hover { border-color: var(--ns-primary, #667eea); }
-        .match-card.active { border-color: var(--ns-primary, #667eea); background: rgba(102,126,234,0.07); }
+        .match-card.active { border-color: var(--ns-primary, #2e7d52); background: rgba(46,125,82,0.08); }
         .attendance-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
@@ -1383,16 +1385,18 @@
             font-family: inherit;
         }
         .sort-btn:hover { border-color: var(--ns-primary, #667eea); color: var(--ns-primary, #667eea); }
-        .sort-btn.active { background: var(--ns-primary, #667eea); color: #0a1628; border-color: var(--ns-primary, #667eea); font-weight: 700; }
+        .sort-btn.active { background: var(--ns-primary, #2e7d52); color: #fff; border-color: var(--ns-primary, #2e7d52); font-weight: 700; }
     </style>
 </head>
 <body>
     <!-- Firebase 로딩 화면 -->
-    <div id="firebaseLoadingScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(160deg,#070e17 0%,#0f1923 40%,#0a1628 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;">
-        <div style="font-size:52px;margin-bottom:18px;">⚽</div>
-        <div style="color:#00d4ff;font-size:22px;font-weight:700;margin-bottom:10px;text-shadow:0 0 20px rgba(0,212,255,.5);">안성남부 회중</div>
-        <div style="color:#7a9bb5;font-size:14px;margin-bottom:24px;" id="loadingMsg">서버에 연결 중...</div>
-        <div class="spinner" style="width:32px;height:32px;border-width:4px;"></div>
+    <div id="firebaseLoadingScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(rgba(255,255,255,0.28),rgba(255,255,255,0.22)),url('bg.jpg') center/cover no-repeat;background-color:#c8e6c9;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;">
+        <div style="background:rgba(255,255,255,0.88);border-radius:20px;padding:40px;text-align:center;backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,0.12);">
+            <div style="font-size:52px;margin-bottom:18px;">⚽</div>
+            <div style="color:#2e7d52;font-size:22px;font-weight:700;margin-bottom:10px;">안성남부 회중</div>
+            <div style="color:#4d7a5e;font-size:14px;margin-bottom:24px;" id="loadingMsg">서버에 연결 중...</div>
+            <div class="spinner" style="width:32px;height:32px;border-width:4px;margin:0 auto;"></div>
+        </div>
     </div>
 
     <!-- 로그인/회원가입 알림 팝업 -->
@@ -1470,15 +1474,15 @@
         <div id="message" class="message hidden"></div>
 
         <!-- 다가오는 운동 일정 배너 -->
-        <div id="upcomingBanner" style="display:none; background:linear-gradient(135deg,#1a2a4a,#0f1e38); border:1px solid rgba(102,126,234,0.4); border-radius:14px; padding:16px 20px; margin-bottom:20px; position:relative;">
+        <div id="upcomingBanner" style="display:none; background:rgba(255,255,255,0.88); border:1.5px solid rgba(46,125,87,0.35); border-left:5px solid #2e7d52; border-radius:14px; padding:16px 20px; margin-bottom:20px; position:relative; backdrop-filter:blur(10px); box-shadow:0 4px 20px rgba(46,125,87,0.12);">
             <div style="display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap;">
                 <div style="font-size:28px; line-height:1;">📅</div>
                 <div style="flex:1; min-width:0;">
-                    <div style="font-size:11px; font-weight:700; letter-spacing:1px; color:var(--ns-primary,#667eea); text-transform:uppercase; margin-bottom:4px;">다가오는 운동 일정</div>
-                    <div id="bannerTitle" style="font-size:16px; font-weight:700; color:#e8eaf6; margin-bottom:6px;"></div>
-                    <div id="bannerDetails" style="font-size:13px; color:#b0bdd8; line-height:1.7;"></div>
+                    <div style="font-size:11px; font-weight:700; letter-spacing:1px; color:var(--ns-primary,#2e7d52); text-transform:uppercase; margin-bottom:4px;">다가오는 운동 일정</div>
+                    <div id="bannerTitle" style="font-size:16px; font-weight:700; color:#1a2e20; margin-bottom:6px;"></div>
+                    <div id="bannerDetails" style="font-size:13px; color:#4d7a5e; line-height:1.7;"></div>
                 </div>
-                <button id="bannerCloseBtn" onclick="dismissBanner()" style="background:none; border:none; color:#667; cursor:pointer; font-size:18px; padding:0; line-height:1; flex-shrink:0;">&times;</button>
+                <button id="bannerCloseBtn" onclick="dismissBanner()" style="background:none; border:none; color:#8fac9a; cursor:pointer; font-size:18px; padding:0; line-height:1; flex-shrink:0;">&times;</button>
             </div>
         </div>
 
@@ -3795,7 +3799,7 @@
                         <div style="text-align:right; flex-shrink:0;">
                             <div style="font-size:13px; font-weight:600; color:var(--ns-primary,#667eea);">${presentCount}/${totalPlayers}명</div>
                             ${isMgr ? `
-                            <button onclick="event.stopPropagation();setAnnouncement(${match.id})" style="display:block;margin-top:4px;background:${isAnnounced ? '#667eea' : 'none'};border:1px solid #667eea;color:${isAnnounced ? '#fff' : '#667eea'};cursor:pointer;font-size:10px;padding:2px 7px;border-radius:8px;white-space:nowrap;">${isAnnounced ? '📢 공지중' : '공지'}</button>
+                            <button onclick="event.stopPropagation();setAnnouncement(${match.id})" style="display:block;margin-top:4px;background:${isAnnounced ? '#2e7d52' : 'none'};border:1px solid #2e7d52;color:${isAnnounced ? '#fff' : '#2e7d52'};cursor:pointer;font-size:10px;padding:2px 7px;border-radius:8px;white-space:nowrap;">${isAnnounced ? '📢 공지중' : '공지'}</button>
                             <button onclick="event.stopPropagation();deleteMatch(${match.id})" style="display:block;margin-top:3px;background:none;border:none;color:#ff4757;cursor:pointer;font-size:11px;padding:2px 0;">삭제</button>` : ''}
                         </div>
                     </div>
