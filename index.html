@@ -2136,10 +2136,10 @@
             closeModal();
 
             const players = DB.getPlayers();
-            const player = players.find(p => p.id === playerId);
+            const player = players.find(p => Number(p.id) === Number(playerId));
             if (!player) return;
 
-            const existing = DB.getStatRequests().find(r => r.playerId === playerId && r.status === 'pending');
+            const existing = DB.getStatRequests().find(r => Number(r.playerId) === Number(playerId) && r.status === 'pending');
             if (existing) {
                 showMessage('이미 처리 중인 수정 요청이 있습니다. 매니저의 검토를 기다려 주세요.', 'warning');
                 return;
@@ -2187,7 +2187,7 @@
         function submitStatRequest() {
             const playerId = parseInt(document.getElementById('statReqPlayerId').value);
             const players = DB.getPlayers();
-            const player = players.find(p => p.id === playerId);
+            const player = players.find(p => Number(p.id) === Number(playerId));
             if (!player) return;
 
             const reqSoccer = {
@@ -2399,7 +2399,7 @@
         function saveNickname(playerId) {
             const val = document.getElementById('nicknameEditInput').value.trim();
             const players = DB.getPlayers();
-            const idx = players.findIndex(p => p.id === playerId);
+            const idx = players.findIndex(p => Number(p.id) === Number(playerId));
             if (idx === -1) return;
             players[idx].nickname = val || null;
             DB.setPlayers(players);
@@ -2835,7 +2835,7 @@
         function editPlayer(playerId, event) {
             event.stopPropagation();
             const players = DB.getPlayers();
-            const player = players.find(p => p.id === playerId);
+            const player = players.find(p => Number(p.id) === Number(playerId));
             if (!player) return;
 
             document.getElementById('playerName').value = player.name;
@@ -2898,7 +2898,7 @@
             const photoEl = document.querySelector('#photoPreview img');
             const nickname = document.getElementById('playerNicknameInput').value.trim() || null;
             const players = DB.getPlayers();
-            const idx = players.findIndex(p => p.id === playerId);
+            const idx = players.findIndex(p => Number(p.id) === Number(playerId));
 
             if (idx !== -1) {
                 players[idx] = {
@@ -2921,7 +2921,7 @@
             event.stopPropagation();
             if (confirm('정말 삭제하시겠습니까?')) {
                 const players = DB.getPlayers();
-                const filtered = players.filter(p => p.id !== playerId);
+                const filtered = players.filter(p => Number(p.id) !== Number(playerId));
                 DB.setPlayers(filtered);
                 showMessage('선수가 삭제되었습니다.');
                 renderPlayersList();
