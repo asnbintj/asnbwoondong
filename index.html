@@ -1830,6 +1830,11 @@
             return Object.values(val).filter(Boolean);
         }
 
+        // Firebase는 undefined 값을 허용하지 않으므로 null로 변환
+        function _sanitize(data) {
+            return JSON.parse(JSON.stringify(data, (k, v) => v === undefined ? null : v));
+        }
+
         // ===== 데이터 관리 =====
         const DEFAULT_MEMBERS = [
             { name: '강민지', gender: '여' }, { name: '강성호', gender: '남' },
@@ -1928,13 +1933,13 @@
             },
 
             getUsers()            { return _cache.users; },
-            setUsers(data)        { _cache.users = data;         fbDB.ref('users').set(data); },
+            setUsers(data)        { _cache.users = data;         fbDB.ref('users').set(_sanitize(data)); },
             getPlayers()          { return _cache.players; },
-            setPlayers(data)      { _cache.players = data;       fbDB.ref('players').set(data); },
+            setPlayers(data)      { _cache.players = data;       fbDB.ref('players').set(_sanitize(data)); },
             getTeamResults()      { return _cache.teamResults; },
-            setTeamResults(data)  { _cache.teamResults = data;   fbDB.ref('teamResults').set(data); },
+            setTeamResults(data)  { _cache.teamResults = data;   fbDB.ref('teamResults').set(_sanitize(data)); },
             getStatRequests()     { return _cache.statRequests; },
-            setStatRequests(data) { _cache.statRequests = data;  fbDB.ref('statRequests').set(data); }
+            setStatRequests(data) { _cache.statRequests = data;  fbDB.ref('statRequests').set(_sanitize(data)); }
         };
 
         // ===== 전역 변수 =====
