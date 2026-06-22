@@ -885,7 +885,7 @@
             }
 
             .chart-container {
-                height: 280px;
+                height: 300px;
             }
 
             .team-stats {
@@ -1469,6 +1469,19 @@
         <!-- 메시지 -->
         <div id="message" class="message hidden"></div>
 
+        <!-- 다가오는 운동 일정 배너 -->
+        <div id="upcomingBanner" style="display:none; background:linear-gradient(135deg,#1a2a4a,#0f1e38); border:1px solid rgba(102,126,234,0.4); border-radius:14px; padding:16px 20px; margin-bottom:20px; position:relative;">
+            <div style="display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap;">
+                <div style="font-size:28px; line-height:1;">📅</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:11px; font-weight:700; letter-spacing:1px; color:var(--ns-primary,#667eea); text-transform:uppercase; margin-bottom:4px;">다가오는 운동 일정</div>
+                    <div id="bannerTitle" style="font-size:16px; font-weight:700; color:#e8eaf6; margin-bottom:6px;"></div>
+                    <div id="bannerDetails" style="font-size:13px; color:#b0bdd8; line-height:1.7;"></div>
+                </div>
+                <button id="bannerCloseBtn" onclick="dismissBanner()" style="background:none; border:none; color:#667; cursor:pointer; font-size:18px; padding:0; line-height:1; flex-shrink:0;">&times;</button>
+            </div>
+        </div>
+
         <!-- 선수 관리 화면 -->
         <div class="content screen active" id="playersScreen">
             <!-- 선수 추가 (매니저만) -->
@@ -1805,7 +1818,7 @@
         <div class="content screen" id="matchScreen">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
                 <h2>📅 운동 기록</h2>
-                <button class="btn btn-primary" id="addMatchBtn" onclick="showCreateMatchForm()" style="width:auto; padding:9px 20px; display:none;">+ 시합 추가</button>
+                <button class="btn btn-primary" id="addMatchBtn" onclick="showCreateMatchForm()" style="width:auto; padding:9px 20px; display:none;">+ 운동 일정 추가</button>
             </div>
 
             <!-- 시합 추가 폼 -->
@@ -1827,6 +1840,20 @@
                 <div class="form-group" style="max-width:400px;">
                     <label>운동 제목</label>
                     <input type="text" id="matchTitle" placeholder="예: 6월 1일 축구" oninput="this.dataset.manuallyEdited='1'">
+                </div>
+                <div class="form-group" style="max-width:400px;">
+                    <label>장소명</label>
+                    <input type="text" id="matchLocation" placeholder="예: 안성 공설운동장">
+                </div>
+                <div class="form-grid" style="max-width:560px;">
+                    <div class="form-group">
+                        <label>시간</label>
+                        <input type="time" id="matchTime">
+                    </div>
+                    <div class="form-group">
+                        <label>주소</label>
+                        <input type="text" id="matchAddress" placeholder="예: 경기도 안성시 ...">
+                    </div>
                 </div>
                 <div class="button-group" style="justify-content:flex-start; margin-top:15px;">
                     <button class="btn btn-primary" onclick="createMatch()" style="width:auto; padding:10px 28px;">등록</button>
@@ -1953,7 +1980,7 @@
         const fbDB = firebase.database();
 
         // 인메모리 캐시 (Firebase 데이터의 로컬 복사본)
-        const _cache = { users: [], players: [], teamResults: [], statRequests: [], matches: [] };
+        const _cache = { users: [], players: [], teamResults: [], statRequests: [], matches: [], announcement: null };
 
         function _toArray(val) {
             if (!val) return [];
@@ -2040,9 +2067,10 @@
                 _cache.teamResults  = _toArray(allData.teamResults);
                 _cache.statRequests = _toArray(allData.statRequests);
                 _cache.matches      = _toArray(allData.matches);
+                _cache.announcement = allData.announcement || null;
 
                 // 실시간 리스너 설정 (첫 번째 이벤트는 이미 once()로 로드했으므로 건너뜀)
-                const skip = { users: true, players: true, teamResults: true, statRequests: true, matches: true };
+                const skip = { users: true, players: true, teamResults: true, statRequests: true, matches: true, announcement: true };
 
                 fbDB.ref('users').on('value', snap => {
                     if (skip.users) { skip.users = false; return; }
@@ -2081,7 +2109,14 @@
                         const ms = document.getElementById('matchScreen');
                         if (ms && ms.classList.contains('active')) renderMatchesTab();
                         renderPlayersList();
+                        renderUpcomingBanner();
                     }
+                });
+
+                fbDB.ref('announcement').on('value', snap => {
+                    if (skip.announcement) { skip.announcement = false; return; }
+                    _cache.announcement = snap.val() || null;
+                    if (currentUser) renderUpcomingBanner();
                 });
             },
 
@@ -2094,7 +2129,9 @@
             getStatRequests()     { return _cache.statRequests; },
             setStatRequests(data) { _cache.statRequests = data;  fbDB.ref('statRequests').set(_sanitize(data)); },
             getMatches()          { return _cache.matches; },
-            setMatches(data)      { _cache.matches = data;       fbDB.ref('matches').set(_sanitize(data)); }
+            setMatches(data)      { _cache.matches = data;       fbDB.ref('matches').set(_sanitize(data)); },
+            getAnnouncement()     { return _cache.announcement; },
+            setAnnouncement(data) { _cache.announcement = data;  fbDB.ref('announcement').set(data ? _sanitize(data) : null); }
         };
 
         // ===== 전역 변수 =====
@@ -2696,6 +2733,8 @@
             renderPlayersList();
             renderPermissionTab();
             updateRequestBadge();
+            bannerDismissed = false;
+            renderUpcomingBanner();
         }
 
         // ===== 탭 전환 =====
@@ -2881,11 +2920,12 @@
                     <div class="player-photo">
                         ${player.photo ? `<img src="${player.photo}">` : '📸'}
                     </div>
-                    <div class="player-name">${player.name}</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:5px; flex-wrap:wrap;">
+                        <span class="player-name" style="margin-bottom:0;">${player.name}</span>
+                        <span class="player-gender" style="margin-bottom:0;">${player.gender}</span>
+                    </div>
                     <div class="player-nickname-badge">${getNickname(player)}</div>
-                    <div class="player-gender">${player.gender}</div>
-                    <div class="player-stats">⚽ ${player.soccerTotalStats}</div>
-                    <div style="font-size:12px; color:#999; margin-bottom:6px;">⚾ ${player.baseballTotalStats}</div>
+                    <div class="player-stats">⚽ ${player.soccerTotalStats} <span style="color:var(--ns-muted,#999); font-weight:400;">/ ⚾ ${player.baseballTotalStats}</span></div>
                     ${attBadge}
                     ${isMgr ? `<div class="btn-group">
                         <button class="btn btn-secondary btn-small" onclick="editPlayer(${player.id}, event)">수정</button>
@@ -3024,6 +3064,9 @@
             const ctx = document.getElementById(canvasId).getContext('2d');
             const labels = Object.keys(stats);
             const data = Object.values(stats);
+            const isMobile = window.innerWidth <= 480;
+            const pointLabelSize = isMobile ? 10 : 12;
+            const tickSize = isMobile ? 9 : 10;
 
             return new Chart(ctx, {
                 type: 'radar',
@@ -3053,12 +3096,27 @@
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
                     scales: {
                         r: {
                             beginAtZero: true,
                             max: 50,
                             ticks: {
-                                stepSize: 10
+                                stepSize: 10,
+                                backdropColor: 'transparent',
+                                color: 'rgba(180,190,210,0.85)',
+                                font: { size: tickSize }
+                            },
+                            pointLabels: {
+                                color: '#c8d0e0',
+                                font: { size: pointLabelSize, weight: '600' }
+                            },
+                            grid: {
+                                color: 'rgba(102, 126, 234, 0.2)'
+                            },
+                            angleLines: {
+                                color: 'rgba(102, 126, 234, 0.25)'
                             }
                         }
                     },
@@ -3710,6 +3768,7 @@
                 return;
             }
 
+            const announced = DB.getAnnouncement();
             container.innerHTML = sorted.map(match => {
                 const att = match.attendance || {};
                 const presentCount = Object.values(att).filter(v => v === true).length;
@@ -3718,16 +3777,26 @@
                 const dateStr      = new Date(match.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
                 const isActive     = Number(currentMatchId) === Number(match.id);
                 const isMgr        = currentUser && currentUser.role === 'manager';
+                const isAnnounced  = announced && Number(announced.matchId) === Number(match.id);
+
+                const locationLine = match.location ? `<div style="font-size:12px; color:var(--ns-muted,#999); margin-top:2px;">📍 ${match.location}${match.time ? ' · ' + match.time : ''}</div>` : (match.time ? `<div style="font-size:12px; color:var(--ns-muted,#999); margin-top:2px;">🕐 ${match.time}</div>` : '');
+                const addressLine  = match.address ? `<div style="font-size:11px; color:var(--ns-muted,#777); margin-top:1px;">${match.address}</div>` : '';
 
                 return `<div class="match-card ${isActive ? 'active' : ''}" onclick="selectMatch(${match.id})">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                        <div>
-                            <div style="font-size:14px; font-weight:700; margin-bottom:3px;">${sportEmoji} ${match.title}</div>
-                            <div style="font-size:12px; color:var(--ns-muted,#999);">${dateStr}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                <span style="font-size:14px; font-weight:700;">${sportEmoji} ${match.title}</span>
+                                ${isAnnounced ? '<span style="font-size:10px; background:#667eea; color:#fff; padding:2px 7px; border-radius:10px; font-weight:700;">공지중</span>' : ''}
+                            </div>
+                            <div style="font-size:12px; color:var(--ns-muted,#999); margin-top:2px;">📆 ${dateStr}</div>
+                            ${locationLine}${addressLine}
                         </div>
                         <div style="text-align:right; flex-shrink:0;">
                             <div style="font-size:13px; font-weight:600; color:var(--ns-primary,#667eea);">${presentCount}/${totalPlayers}명</div>
-                            ${isMgr ? `<button onclick="event.stopPropagation();deleteMatch(${match.id})" style="background:none;border:none;color:#ff4757;cursor:pointer;font-size:11px;padding:2px 0;">삭제</button>` : ''}
+                            ${isMgr ? `
+                            <button onclick="event.stopPropagation();setAnnouncement(${match.id})" style="display:block;margin-top:4px;background:${isAnnounced ? '#667eea' : 'none'};border:1px solid #667eea;color:${isAnnounced ? '#fff' : '#667eea'};cursor:pointer;font-size:10px;padding:2px 7px;border-radius:8px;white-space:nowrap;">${isAnnounced ? '📢 공지중' : '공지'}</button>
+                            <button onclick="event.stopPropagation();deleteMatch(${match.id})" style="display:block;margin-top:3px;background:none;border:none;color:#ff4757;cursor:pointer;font-size:11px;padding:2px 0;">삭제</button>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -3848,14 +3917,17 @@
         }
 
         function createMatch() {
-            const date  = document.getElementById('matchDate').value;
-            const sport = document.querySelector('input[name="matchSport"]:checked').value;
-            const title = document.getElementById('matchTitle').value.trim();
+            const date     = document.getElementById('matchDate').value;
+            const sport    = document.querySelector('input[name="matchSport"]:checked').value;
+            const title    = document.getElementById('matchTitle').value.trim();
+            const location = document.getElementById('matchLocation').value.trim();
+            const time     = document.getElementById('matchTime').value;
+            const address  = document.getElementById('matchAddress').value.trim();
             if (!date || !title) { showMessage('날짜와 제목을 입력하세요.', 'error'); return; }
             const matches  = DB.getMatches();
             const newMatch = {
                 id: Math.max(...matches.map(m => m.id), 0) + 1,
-                date, sport, title,
+                date, sport, title, location, time, address,
                 attendance: {},
                 createdAt: new Date().toISOString()
             };
@@ -3863,9 +3935,53 @@
             DB.setMatches(matches);
             document.getElementById('createMatchForm').style.display = 'none';
             document.getElementById('matchTitle').dataset.manuallyEdited = '';
+            document.getElementById('matchLocation').value = '';
+            document.getElementById('matchTime').value = '';
+            document.getElementById('matchAddress').value = '';
             showMessage('일정이 등록되었습니다.');
             currentMatchId = newMatch.id;
             renderMatchesTab();
+        }
+
+        function setAnnouncement(matchId) {
+            const announced = DB.getAnnouncement();
+            if (announced && Number(announced.matchId) === Number(matchId)) {
+                DB.setAnnouncement(null);
+                showMessage('공지가 해제되었습니다.');
+            } else {
+                DB.setAnnouncement({ matchId: Number(matchId) });
+                showMessage('일정이 공지되었습니다.');
+            }
+            renderMatchesTab();
+            renderUpcomingBanner();
+        }
+
+        let bannerDismissed = false;
+
+        function renderUpcomingBanner() {
+            const banner = document.getElementById('upcomingBanner');
+            if (!banner || bannerDismissed) return;
+            const announced = DB.getAnnouncement();
+            if (!announced) { banner.style.display = 'none'; return; }
+
+            const match = DB.getMatches().find(m => Number(m.id) === Number(announced.matchId));
+            if (!match) { banner.style.display = 'none'; return; }
+
+            const sportEmoji = match.sport === 'soccer' ? '⚽' : '⚾';
+            const dateStr = new Date(match.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+            let details = `📆 ${dateStr}`;
+            if (match.time) details += `<br>🕐 ${match.time}`;
+            if (match.location) details += `<br>📍 ${match.location}`;
+            if (match.address) details += `<br><span style="color:#8892a4; font-size:12px;">${match.address}</span>`;
+
+            document.getElementById('bannerTitle').innerHTML = `${sportEmoji} ${match.title}`;
+            document.getElementById('bannerDetails').innerHTML = details;
+            banner.style.display = 'block';
+        }
+
+        function dismissBanner() {
+            bannerDismissed = true;
+            document.getElementById('upcomingBanner').style.display = 'none';
         }
 
         function deleteMatch(matchId) {
@@ -3875,6 +3991,11 @@
                 currentMatchId = null;
                 const panel = document.getElementById('attendancePanel');
                 if (panel) panel.innerHTML = '<p style="color:var(--ns-muted,#999); text-align:center; padding:40px 0; font-size:14px;">왼쪽에서 시합을 선택하세요.</p>';
+            }
+            const ann = DB.getAnnouncement();
+            if (ann && Number(ann.matchId) === Number(matchId)) {
+                DB.setAnnouncement(null);
+                renderUpcomingBanner();
             }
             showMessage('일정이 삭제되었습니다.');
             renderMatchesTab();
