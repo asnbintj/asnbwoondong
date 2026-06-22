@@ -1369,6 +1369,21 @@
             color: var(--ns-muted, #888);
             margin-bottom: 5px;
         }
+
+        /* 정렬 버튼 */
+        .sort-btn {
+            background: var(--ns-surface2, #f0f0f0);
+            border: 1px solid var(--ns-border, #ddd);
+            color: var(--ns-muted, #888);
+            padding: 5px 13px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .sort-btn:hover { border-color: var(--ns-primary, #667eea); color: var(--ns-primary, #667eea); }
+        .sort-btn.active { background: var(--ns-primary, #667eea); color: #0a1628; border-color: var(--ns-primary, #667eea); font-weight: 700; }
     </style>
 </head>
 <body>
@@ -1561,7 +1576,15 @@
                         <button class="btn btn-primary" id="addPlayerBtn" onclick="showAddPlayerForm()" style="width: auto; padding: 9px 18px; display: none;">+ 선수 추가</button>
                     </div>
                 </div>
-                <div class="player-grid" id="playersList"></div>
+                <!-- 정렬 컨트롤 -->
+                <div id="sortControls" style="display:none; align-items:center; gap:6px; margin-bottom:14px; flex-wrap:wrap;">
+                    <span style="font-size:13px; color:var(--ns-muted,#999);">정렬:</span>
+                    <button class="sort-btn active" onclick="setSortOrder('default',this)">기본</button>
+                    <button class="sort-btn" onclick="setSortOrder('name',this)">가나다 순</button>
+                    <button class="sort-btn" onclick="setSortOrder('soccer',this)">⚽ 능력치 순</button>
+                    <button class="sort-btn" onclick="setSortOrder('baseball',this)">⚾ 능력치 순</button>
+                </div>
+                <div id="playersList"></div>
             </div>
         </div>
 
@@ -2080,6 +2103,7 @@
         let selectedRole = null;
         let currentTeamDivideData = null;
         let playerCharts = {};
+        let currentSort = 'default';
 
         // ===== 초기화 — window.load 에서 async로 실행됩니다 =====
 
@@ -2666,6 +2690,9 @@
             document.getElementById('matchTab').style.display = 'block';
             document.getElementById('addMatchBtn').style.display = isMgr ? 'inline-block' : 'none';
 
+            // 정렬 컨트롤 표시
+            document.getElementById('sortControls').style.display = 'flex';
+
             renderPlayersList();
             renderPermissionTab();
             updateRequestBadge();
@@ -2819,11 +2846,26 @@
             renderPlayersList();
         }
 
+        function setSortOrder(sort, btn) {
+            currentSort = sort;
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            renderPlayersList();
+        }
+
+        function applySortOrder(arr) {
+            const sorted = [...arr];
+            if (currentSort === 'name')     sorted.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+            else if (currentSort === 'soccer')   sorted.sort((a, b) => b.soccerTotalStats - a.soccerTotalStats);
+            else if (currentSort === 'baseball') sorted.sort((a, b) => b.baseballTotalStats - a.baseballTotalStats);
+            return sorted;
+        }
+
         function renderPlayersList() {
             const allPlayers = DB.getPlayers();
             const container  = document.getElementById('playersList');
-            const active     = allPlayers.filter(p => p.active !== false);
-            const inactive   = allPlayers.filter(p => p.active === false);
+            const active     = applySortOrder(allPlayers.filter(p => p.active !== false));
+            const inactive   = applySortOrder(allPlayers.filter(p => p.active === false));
 
             function makeCard(player, isInactive) {
                 const card = document.createElement('div');
