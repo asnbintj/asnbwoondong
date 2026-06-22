@@ -1570,9 +1570,17 @@
 
                 <div class="form-group" style="margin-top: 20px;">
                     <label>사진</label>
-                    <label class="file-input-label" for="playerPhoto">사진 업로드</label>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+                        <label class="file-input-label" for="playerPhoto">📁 파일 선택</label>
+                        <button type="button" onclick="pastePhotoFromClipboard()" style="padding:12px 18px; background:rgba(46,125,87,0.12); border:2px dashed var(--ns-primary,#2e7d52); border-radius:8px; color:var(--ns-primary,#2e7d52); cursor:pointer; font-size:14px; font-weight:600; font-family:inherit;">📋 클립보드 붙여넣기</button>
+                    </div>
+                    <div id="photoDropZone" style="border:2px dashed var(--ns-border,#ccc); border-radius:10px; padding:14px; font-size:13px; color:var(--ns-muted,#888); text-align:center; cursor:pointer;" onclick="document.getElementById('playerPhoto').click()" ondrop="handlePhotoDrop(event)" ondragover="event.preventDefault(); this.style.borderColor='var(--ns-primary,#2e7d52)'" ondragleave="this.style.borderColor=''">
+                        이미지를 여기에 드래그하거나 <strong>Ctrl+V</strong>로 붙여넣기
+                    </div>
                     <input type="file" id="playerPhoto" accept="image/*" onchange="previewPhoto(event)">
-                    <div class="photo-preview" id="photoPreview" style="display: none;"></div>
+                    <div class="photo-preview" id="photoPreview" style="display: none; position:relative;">
+                        <button onclick="clearPhoto()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;z-index:1;">&times;</button>
+                    </div>
                 </div>
 
                 <div class="button-group">
@@ -2828,16 +2836,53 @@
 
         function previewPhoto(event) {
             const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    const compressed = await compressImage(e.target.result);
-                    const preview = document.getElementById('photoPreview');
-                    preview.innerHTML = `<img src="${compressed}">`;
-                    preview.style.display = 'flex';
-                };
-                reader.readAsDataURL(file);
+            if (file) applyPhotoFile(file);
+        }
+
+        function handlePhotoDrop(event) {
+            event.preventDefault();
+            document.getElementById('photoDropZone').style.borderColor = '';
+            const file = event.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) applyPhotoFile(file);
+        }
+
+        async function pastePhotoFromClipboard() {
+            try {
+                const items = await navigator.clipboard.read();
+                for (const item of items) {
+                    const imageType = item.types.find(t => t.startsWith('image/'));
+                    if (imageType) {
+                        const blob = await item.getType(imageType);
+                        applyPhotoFile(blob);
+                        return;
+                    }
+                }
+                showMessage('클립보드에 이미지가 없습니다.', 'warning');
+            } catch {
+                showMessage('Ctrl+V 키를 눌러 붙여넣기 하거나 파일을 선택해주세요.', 'warning');
             }
+        }
+
+        function applyPhotoFile(file) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const compressed = await compressImage(e.target.result);
+                const preview = document.getElementById('photoPreview');
+                const existing = preview.querySelector('img');
+                if (existing) existing.remove();
+                const img = document.createElement('img');
+                img.src = compressed;
+                preview.appendChild(img);
+                preview.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearPhoto() {
+            const preview = document.getElementById('photoPreview');
+            preview.innerHTML = '<button onclick="clearPhoto()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;z-index:1;">&times;</button>';
+            preview.style.display = 'none';
+            document.getElementById('playerPhoto').value = '';
         }
 
         function addPlayer() {
@@ -4006,6 +4051,20 @@
         }
 
         // 페이지 로드 시
+        document.addEventListener('paste', function(e) {
+            const form = document.getElementById('addPlayerForm');
+            if (!form || form.style.display === 'none') return;
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    applyPhotoFile(item.getAsFile());
+                    return;
+                }
+            }
+        });
+
         window.addEventListener('load', async () => {
             try {
                 await DB.init();
