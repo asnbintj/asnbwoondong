@@ -1386,6 +1386,38 @@
         }
         .sort-btn:hover { border-color: var(--ns-primary, #667eea); color: var(--ns-primary, #667eea); }
         .sort-btn.active { background: var(--ns-primary, #2e7d52); color: #fff; border-color: var(--ns-primary, #2e7d52); font-weight: 700; }
+
+        /* ===== 참여 의사 RSVP ===== */
+        .rsvp-row { display: flex; gap: 6px; }
+        .rsvp-btn {
+            flex: 1; padding: 9px 4px; border: 2px solid var(--ns-border, #ddd);
+            border-radius: 10px; background: rgba(255,255,255,0.80);
+            color: var(--ns-muted, #666); cursor: pointer; font-size: 12px;
+            font-weight: 700; font-family: inherit; transition: all 0.2s; text-align: center; line-height: 1.5;
+        }
+        .rsvp-btn:hover { border-color: var(--ns-primary, #2e7d52); background: rgba(240,252,244,0.90); }
+        .rsvp-btn.r-play.selected  { background: rgba(57,255,20,0.13);   border-color: #3dbb6a; color: #1a7a00; }
+        .rsvp-btn.r-watch.selected { background: rgba(102,126,234,0.13); border-color: #667eea; color: #3a4ab0; }
+        .rsvp-btn.r-skip.selected  { background: rgba(255,71,87,0.10);   border-color: #ff4757; color: #9b0000; }
+
+        /* ===== 식사 섹션 ===== */
+        .meal-section {
+            background: rgba(255,248,210,0.92);
+            border: 1.5px solid rgba(200,160,0,0.40);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 14px;
+        }
+        .meal-vote-row { display: flex; gap: 8px; margin-top: 8px; }
+        .meal-vote-btn {
+            flex: 1; padding: 8px 10px; border: 2px solid rgba(200,160,0,0.40);
+            border-radius: 8px; background: rgba(255,255,255,0.82);
+            color: #7a5000; cursor: pointer; font-size: 13px;
+            font-weight: 700; font-family: inherit; transition: all 0.2s; text-align: center;
+        }
+        .meal-vote-btn:hover { border-color: #e09618; background: rgba(255,240,180,0.80); }
+        .meal-vote-btn.meal-yes.selected { background: rgba(57,255,20,0.15);  border-color: #3dbb6a; color: #1a7a00; }
+        .meal-vote-btn.meal-no.selected  { background: rgba(255,71,87,0.10);  border-color: #ff4757; color: #9b0000; }
     </style>
 </head>
 <body>
@@ -1481,6 +1513,8 @@
                     <div style="font-size:11px; font-weight:700; letter-spacing:1px; color:var(--ns-primary,#2e7d52); text-transform:uppercase; margin-bottom:4px;">다가오는 운동 일정</div>
                     <div id="bannerTitle" style="font-size:16px; font-weight:700; color:#1a2e20; margin-bottom:6px;"></div>
                     <div id="bannerDetails" style="font-size:13px; color:#4d7a5e; line-height:1.7;"></div>
+                    <div id="bannerRsvp" style="margin-top:10px;"></div>
+                    <div id="bannerMealRsvp"></div>
                 </div>
                 <button id="bannerCloseBtn" onclick="dismissBanner()" style="background:none; border:none; color:#8fac9a; cursor:pointer; font-size:18px; padding:0; line-height:1; flex-shrink:0;">&times;</button>
             </div>
@@ -1882,9 +1916,9 @@
                     </div>
                 </div>
                 <div>
-                    <h3 style="margin-bottom:12px; color:var(--ns-text,#333); font-size:15px;">출석 체크</h3>
+                    <h3 style="margin-bottom:12px; color:var(--ns-text,#333); font-size:15px;">참여 현황 / 출석 체크</h3>
                     <div id="attendancePanel" style="color:var(--ns-muted,#999); text-align:center; padding:40px 0; font-size:14px;">
-                        왼쪽에서 시합을 선택하세요.
+                        왼쪽에서 일정을 선택하세요.
                     </div>
                 </div>
             </div>
@@ -2120,6 +2154,7 @@
                     if (currentUser) {
                         const ms = document.getElementById('matchScreen');
                         if (ms && ms.classList.contains('active')) renderMatchesTab();
+                        if (currentMatchId) renderAttendancePanel(currentMatchId);
                         renderPlayersList();
                         renderUpcomingBanner();
                     }
@@ -2963,7 +2998,7 @@
                 const attInfo    = getThisMonthAttendance(player.id);
                 const attBadge   = attInfo ? `<div class="att-month-badge">📅 이달 ${attInfo.attended}/${attInfo.total}회</div>` : '';
                 const isMgr      = currentUser.role === 'manager';
-                const btnLabel   = isInactive ? '✅ 활동 복구' : '💤 비활동 처리';
+                const btnLabel   = isInactive ? '✅ 선수 배정' : '💤 응원단 배정';
                 const btnColor   = isInactive ? '#51cf66' : '#ff9800';
                 card.innerHTML = `
                     <div class="player-photo">
@@ -3002,7 +3037,7 @@
             }
             container.appendChild(activeGrid);
 
-            // 비활동 선수 섹션 (접기/펼치기)
+            // 응원단 섹션 (접기/펼치기)
             if (inactive.length > 0) {
                 const section = document.createElement('div');
                 section.style.marginTop = '28px';
@@ -3014,7 +3049,7 @@
 
                 const toggleBtn = document.createElement('button');
                 toggleBtn.style.cssText = 'background:none; border:1px solid var(--ns-border,#ddd); border-radius:8px; padding:10px 18px; cursor:pointer; color:var(--ns-muted,#999); font-size:14px; display:flex; align-items:center; gap:8px; margin-bottom:14px;';
-                toggleBtn.innerHTML = '<span class="inactive-arrow">▶</span> 비활동 선수 (' + inactive.length + '명)';
+                toggleBtn.innerHTML = '<span class="inactive-arrow">▶</span> 응원단 (' + inactive.length + '명)';
                 toggleBtn.onclick = function() {
                     const hidden = inactiveGrid.style.display === 'none';
                     inactiveGrid.style.display = hidden ? 'grid' : 'none';
@@ -3819,14 +3854,19 @@
 
             const announced = DB.getAnnouncement();
             container.innerHTML = sorted.map(match => {
-                const att = match.attendance || {};
-                const presentCount = Object.values(att).filter(v => v === true).length;
-                const totalPlayers = DB.getPlayers().filter(p => p.active !== false).length;
+                const rsvp         = match.rsvp || {};
+                const playCount    = Object.values(rsvp).filter(v => v === 'play').length;
+                const watchCount   = Object.values(rsvp).filter(v => v === 'watch').length;
+                const skipCount    = Object.values(rsvp).filter(v => v === 'skip').length;
                 const sportEmoji   = match.sport === 'soccer' ? '⚽' : '⚾';
                 const dateStr      = new Date(match.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
                 const isActive     = Number(currentMatchId) === Number(match.id);
                 const isMgr        = currentUser && currentUser.role === 'manager';
                 const isAnnounced  = announced && Number(announced.matchId) === Number(match.id);
+                const myPid        = currentUser && currentUser.playerId ? String(currentUser.playerId) : null;
+                const myRsvp       = myPid ? rsvp[myPid] : null;
+                const myRsvpIcon   = myRsvp === 'play' ? '✅' : myRsvp === 'watch' ? '👀' : myRsvp === 'skip' ? '❌' : '';
+                const hasMeal      = match.meal && match.meal.enabled;
 
                 const locationLine = match.location ? `<div style="font-size:12px; color:var(--ns-muted,#999); margin-top:2px;">📍 ${match.location}${match.time ? ' · ' + match.time : ''}</div>` : (match.time ? `<div style="font-size:12px; color:var(--ns-muted,#999); margin-top:2px;">🕐 ${match.time}</div>` : '');
                 const addressLine  = match.address ? `<div style="font-size:11px; color:var(--ns-muted,#777); margin-top:1px;">${match.address}</div>` : '';
@@ -3837,12 +3877,19 @@
                             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                                 <span style="font-size:14px; font-weight:700;">${sportEmoji} ${match.title}</span>
                                 ${isAnnounced ? '<span style="font-size:10px; background:#667eea; color:#fff; padding:2px 7px; border-radius:10px; font-weight:700;">공지중</span>' : ''}
+                                ${hasMeal ? '<span style="font-size:10px; background:#e09618; color:#fff; padding:2px 7px; border-radius:10px; font-weight:700;">🍽 식사</span>' : ''}
                             </div>
                             <div style="font-size:12px; color:var(--ns-muted,#999); margin-top:2px;">📆 ${dateStr}</div>
                             ${locationLine}${addressLine}
                         </div>
                         <div style="text-align:right; flex-shrink:0;">
-                            <div style="font-size:13px; font-weight:600; color:var(--ns-primary,#667eea);">${presentCount}/${totalPlayers}명</div>
+                            <div style="font-size:11px; color:var(--ns-muted,#999); line-height:1.7;">
+                                ${playCount > 0 ? `<span style="color:#3dbb6a; font-weight:700;">✅ ${playCount}</span> ` : ''}
+                                ${watchCount > 0 ? `<span style="color:#667eea; font-weight:700;">👀 ${watchCount}</span> ` : ''}
+                                ${skipCount > 0 ? `<span style="color:#ff4757; font-weight:700;">❌ ${skipCount}</span>` : ''}
+                                ${(playCount + watchCount + skipCount) === 0 ? '<span style="color:var(--ns-dim,#aaa);">미응답</span>' : ''}
+                            </div>
+                            ${myRsvpIcon ? `<div style="font-size:11px; color:var(--ns-muted,#999); margin-top:2px;">내 응답 ${myRsvpIcon}</div>` : ''}
                             ${isMgr ? `
                             <button onclick="event.stopPropagation();setAnnouncement(${match.id})" style="display:block;margin-top:4px;background:${isAnnounced ? '#2e7d52' : 'none'};border:1px solid #2e7d52;color:${isAnnounced ? '#fff' : '#2e7d52'};cursor:pointer;font-size:10px;padding:2px 7px;border-radius:8px;white-space:nowrap;">${isAnnounced ? '📢 공지중' : '공지'}</button>
                             <button onclick="event.stopPropagation();deleteMatch(${match.id})" style="display:block;margin-top:3px;background:none;border:none;color:#ff4757;cursor:pointer;font-size:11px;padding:2px 0;">삭제</button>` : ''}
@@ -3864,49 +3911,166 @@
             const panel = document.getElementById('attendancePanel');
             if (!match || !panel) return;
 
-            const players      = DB.getPlayers().filter(p => p.active !== false);
-            const att          = match.attendance || {};
-            const dateStr      = new Date(match.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-            const sportEmoji   = match.sport === 'soccer' ? '⚽' : '⚾';
+            const players    = DB.getPlayers().filter(p => p.active !== false);
+            const att        = match.attendance || {};
+            const rsvp       = match.rsvp || {};
+            const mealRsvp   = match.mealRsvp || {};
+            const dateStr    = new Date(match.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+            const sportEmoji = match.sport === 'soccer' ? '⚽' : '⚾';
+            const isMgr      = currentUser && currentUser.role === 'manager';
+            const myPid      = currentUser && currentUser.playerId ? String(currentUser.playerId) : null;
+            const myRsvp     = myPid ? rsvp[myPid] : null;
+
+            // 카운트
             const presentCount = Object.values(att).filter(v => v === true).length;
             const absentCount  = Object.values(att).filter(v => v === false).length;
             const unrecorded   = players.length - Object.keys(att).length;
-            const isMgr        = currentUser && currentUser.role === 'manager';
+            const playCount    = Object.values(rsvp).filter(v => v === 'play').length;
+            const watchCount   = Object.values(rsvp).filter(v => v === 'watch').length;
+            const skipCount    = Object.values(rsvp).filter(v => v === 'skip').length;
+            const mealYes      = Object.values(mealRsvp).filter(v => v === 'yes').length;
+            const mealNo       = Object.values(mealRsvp).filter(v => v === 'no').length;
+            const hasMeal      = match.meal && match.meal.enabled;
 
-            panel.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-                    <div>
-                        <div style="font-size:16px; font-weight:700;">${sportEmoji} ${match.title}</div>
-                        <div style="font-size:12px; color:var(--ns-muted,#999); margin-top:3px;">${dateStr}</div>
+            // === [1] RSVP 현황 그리드 ===
+            const rsvpGrid = players.map(p => {
+                const pr   = rsvp[String(p.id)];
+                const icon = pr === 'play' ? '✅' : pr === 'watch' ? '👀' : pr === 'skip' ? '❌' : '⬜';
+                const cls  = pr === 'play' ? 'present' : pr === 'skip' ? 'absent' : '';
+                return `<div class="attendance-item ${cls} no-cursor">
+                    <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--ns-bg,#eee);">
+                        ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;">` : '📸'}
                     </div>
-                    <div style="display:flex; gap:12px; font-size:13px; font-weight:600; flex-wrap:wrap;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+                        <div style="font-size:11px;color:var(--ns-muted,#999);">${p.gender}</div>
+                    </div>
+                    <span style="font-size:18px;flex-shrink:0;">${icon}</span>
+                </div>`;
+            }).join('');
+
+            // === [2] 내 RSVP 버튼 ===
+            const myRsvpSection = myPid ? `
+                <div style="margin-bottom:12px;">
+                    <div style="font-size:12px;font-weight:700;color:var(--ns-primary,#2e7d52);margin-bottom:6px;">내 참여 여부</div>
+                    <div class="rsvp-row">
+                        <button class="rsvp-btn r-play  ${myRsvp==='play' ?'selected':''}" onclick="submitRsvp(${matchId},'play')">✅<br>운동 참여</button>
+                        <button class="rsvp-btn r-watch ${myRsvp==='watch'?'selected':''}" onclick="submitRsvp(${matchId},'watch')">👀<br>구경만</button>
+                        <button class="rsvp-btn r-skip  ${myRsvp==='skip' ?'selected':''}" onclick="submitRsvp(${matchId},'skip')">❌<br>다음에</button>
+                    </div>
+                </div>` : '';
+
+            // === [3] 식사 섹션 ===
+            let mealSection = '';
+            if (isMgr) {
+                const loc  = (match.meal && match.meal.location) || '';
+                const menu = (match.meal && match.meal.menu) || '';
+                const playWatchPlayers = players.filter(p => rsvp[String(p.id)] === 'play' || rsvp[String(p.id)] === 'watch');
+                const mealGrid = playWatchPlayers.length > 0
+                    ? playWatchPlayers.map(p => {
+                        const mr   = mealRsvp[String(p.id)];
+                        const icon = mr === 'yes' ? '✅' : mr === 'no' ? '❌' : '⬜';
+                        const cls  = mr === 'yes' ? 'present' : mr === 'no' ? 'absent' : '';
+                        return `<div class="attendance-item ${cls} no-cursor">
+                            <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--ns-bg,#eee);">
+                                ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;">` : '📸'}
+                            </div>
+                            <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div></div>
+                            <span style="font-size:18px;flex-shrink:0;">${icon}</span>
+                        </div>`;
+                    }).join('')
+                    : `<div style="color:var(--ns-muted,#999);font-size:13px;padding:8px 0;">참여/구경 응답자가 없습니다.</div>`;
+
+                mealSection = `
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--ns-border,#ddd);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                        <div style="font-size:14px;font-weight:700;color:var(--ns-text,#333);">🍽 식사 안내 설정</div>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ns-muted,#666);cursor:pointer;">
+                            <input type="checkbox" id="mealEnabledChk" ${hasMeal?'checked':''} onchange="toggleMealEnabled(${matchId})" style="width:16px;height:16px;cursor:pointer;accent-color:var(--ns-primary,#2e7d52);">
+                            식사 자리 있음
+                        </label>
+                    </div>
+                    ${hasMeal ? `
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+                        <input id="mealLocationInput" type="text" value="${loc}" placeholder="식사 장소 (예: 맛있는집)" style="padding:8px 12px;border:1.5px solid var(--ns-border,#ddd);border-radius:8px;font-size:13px;font-family:inherit;background:rgba(255,255,255,0.92);">
+                        <input id="mealMenuInput" type="text" value="${menu}" placeholder="메뉴 (예: 삼겹살, 냉면)" style="padding:8px 12px;border:1.5px solid var(--ns-border,#ddd);border-radius:8px;font-size:13px;font-family:inherit;background:rgba(255,255,255,0.92);">
+                        <button onclick="saveMealInfo(${matchId})" class="btn btn-success" style="width:auto;padding:7px 18px;font-size:13px;align-self:flex-start;">💾 저장</button>
+                    </div>
+                    <div style="font-size:12px;color:var(--ns-muted,#888);margin-bottom:8px;">식사 참석: ✅ ${mealYes}명 · ❌ ${mealNo}명 (참여/구경 응답자 대상)</div>
+                    <div class="attendance-grid">${mealGrid}</div>` : ''}
+                </div>`;
+            } else if (hasMeal) {
+                const canVote = myRsvp === 'play' || myRsvp === 'watch';
+                const myMeal  = myPid ? mealRsvp[myPid] : null;
+                let mealInfo = '';
+                if (match.meal.location || match.meal.menu) {
+                    mealInfo = `<div style="font-size:13px;color:#7a5000;margin-bottom:8px;">`;
+                    if (match.meal.location) mealInfo += `📍 ${match.meal.location}`;
+                    if (match.meal.location && match.meal.menu) mealInfo += ` · `;
+                    if (match.meal.menu) mealInfo += `🍽 ${match.meal.menu}`;
+                    mealInfo += `</div>`;
+                }
+                mealSection = `
+                <div class="meal-section">
+                    <div style="font-size:14px;font-weight:700;color:#7a5000;margin-bottom:4px;">🍽 운동 후 식사 자리가 있습니다!</div>
+                    <div style="font-size:12px;color:#a07000;margin-bottom:6px;">참석 ${mealYes}명 · 불참 ${mealNo}명</div>
+                    ${mealInfo}
+                    ${canVote ? `<div class="meal-vote-row">
+                        <button class="meal-vote-btn meal-yes ${myMeal==='yes'?'selected':''}" onclick="submitMealRsvp(${matchId},'yes')">✅ 식사 참석</button>
+                        <button class="meal-vote-btn meal-no  ${myMeal==='no' ?'selected':''}" onclick="submitMealRsvp(${matchId},'no')">❌ 식사 불참</button>
+                    </div>` : `<div style="font-size:12px;color:#a07000;">운동 참여 또는 구경 응답 후 식사 여부를 투표할 수 있습니다.</div>`}
+                </div>`;
+            }
+
+            // === [4] 출석 체크 섹션 (매니저 전용) ===
+            const attSection = `
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--ns-border,#ddd);">
+                    <div style="font-size:14px;font-weight:700;color:var(--ns-text,#333);margin-bottom:8px;">📋 출석 체크 <span style="font-size:11px;font-weight:400;color:var(--ns-muted,#999);">(당일 실제 출석 — 매니저)</span></div>
+                    <div style="display:flex;gap:12px;font-size:13px;font-weight:600;flex-wrap:wrap;margin-bottom:${isMgr ? '10px' : '12px'};">
                         <span style="color:#39ff14;">✅ ${presentCount}명</span>
                         <span style="color:#ff4757;">❌ ${absentCount}명</span>
                         <span style="color:var(--ns-muted,#999);">⬜ ${unrecorded}명</span>
                     </div>
-                </div>
-                ${isMgr ? `<div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-                    <button onclick="setAllAttendance(${matchId},true)"  class="btn btn-success" style="width:auto;padding:6px 14px;font-size:12px;">✅ 전체 참석</button>
-                    <button onclick="setAllAttendance(${matchId},false)" class="btn btn-danger"  style="width:auto;padding:6px 14px;font-size:12px;">❌ 전체 불참</button>
-                    <button onclick="setAllAttendance(${matchId},null)"  class="btn btn-secondary" style="width:auto;padding:6px 14px;font-size:12px;margin-top:0;">⬜ 초기화</button>
-                </div>` : ''}
-                <div class="attendance-grid">
-                    ${players.map(p => {
-                        const status = att[String(p.id)];
-                        const cls    = status === true ? 'present' : status === false ? 'absent' : '';
-                        const icon   = status === true ? '✅' : status === false ? '❌' : '⬜';
-                        return `<div class="attendance-item ${cls}${!isMgr ? ' no-cursor' : ''}" ${isMgr ? `onclick="toggleAttendance(${matchId},${p.id})"` : ''}>
-                            <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--ns-bg,#eee);">
-                                ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;">` : '📸'}
-                            </div>
-                            <div style="flex:1;min-width:0;">
-                                <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
-                                <div style="font-size:11px;color:var(--ns-muted,#999);">${p.gender}</div>
-                            </div>
-                            <span style="font-size:18px;flex-shrink:0;">${icon}</span>
-                        </div>`;
-                    }).join('')}
+                    ${isMgr ? `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                        <button onclick="setAllAttendance(${matchId},true)"  class="btn btn-success"   style="width:auto;padding:6px 14px;font-size:12px;">✅ 전체 참석</button>
+                        <button onclick="setAllAttendance(${matchId},false)" class="btn btn-danger"    style="width:auto;padding:6px 14px;font-size:12px;">❌ 전체 불참</button>
+                        <button onclick="setAllAttendance(${matchId},null)"  class="btn btn-secondary" style="width:auto;padding:6px 14px;font-size:12px;margin-top:0;">⬜ 초기화</button>
+                    </div>` : ''}
+                    <div class="attendance-grid">
+                        ${players.map(p => {
+                            const status = att[String(p.id)];
+                            const cls    = status === true ? 'present' : status === false ? 'absent' : '';
+                            const icon   = status === true ? '✅' : status === false ? '❌' : '⬜';
+                            return `<div class="attendance-item ${cls}${!isMgr ? ' no-cursor' : ''}" ${isMgr ? `onclick="toggleAttendance(${matchId},${p.id})"` : ''}>
+                                <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--ns-bg,#eee);">
+                                    ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;">` : '📸'}
+                                </div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+                                    <div style="font-size:11px;color:var(--ns-muted,#999);">${p.gender}</div>
+                                </div>
+                                <span style="font-size:18px;flex-shrink:0;">${icon}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
                 </div>`;
+
+            panel.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <div style="font-size:16px;font-weight:700;">${sportEmoji} ${match.title}</div>
+                        <div style="font-size:12px;color:var(--ns-muted,#999);margin-top:3px;">${dateStr}</div>
+                    </div>
+                    <div style="display:flex;gap:10px;font-size:13px;font-weight:600;flex-wrap:wrap;">
+                        <span style="color:#3dbb6a;">✅ ${playCount}</span>
+                        <span style="color:#667eea;">👀 ${watchCount}</span>
+                        <span style="color:#ff4757;">❌ ${skipCount}</span>
+                    </div>
+                </div>
+                ${myRsvpSection}
+                <div class="attendance-grid">${rsvpGrid}</div>
+                ${mealSection}
+                ${attSection}`;
         }
 
         function toggleAttendance(matchId, playerId) {
@@ -3978,6 +4142,9 @@
                 id: Math.max(...matches.map(m => m.id), 0) + 1,
                 date, sport, title, location, time, address,
                 attendance: {},
+                rsvp: {},
+                mealRsvp: {},
+                meal: { enabled: false, location: '', menu: '' },
                 createdAt: new Date().toISOString()
             };
             matches.push(newMatch);
@@ -4026,6 +4193,71 @@
             document.getElementById('bannerTitle').innerHTML = `${sportEmoji} ${match.title}`;
             document.getElementById('bannerDetails').innerHTML = details;
             banner.style.display = 'block';
+
+            // RSVP 버튼 섹션
+            const rsvpEl = document.getElementById('bannerRsvp');
+            if (rsvpEl && currentUser) {
+                const pid = currentUser.playerId ? String(currentUser.playerId) : null;
+                if (!pid) {
+                    rsvpEl.innerHTML = '';
+                } else {
+                    const rsvp       = match.rsvp || {};
+                    const myRsvp     = rsvp[pid];
+                    const playCount  = Object.values(rsvp).filter(v => v === 'play').length;
+                    const watchCount = Object.values(rsvp).filter(v => v === 'watch').length;
+                    const skipCount  = Object.values(rsvp).filter(v => v === 'skip').length;
+                    const total      = playCount + watchCount + skipCount;
+                    const summary    = total > 0
+                        ? `<div style="font-size:12px;color:var(--ns-muted,#888);margin-bottom:7px;">✅ 참여 ${playCount} · 👀 구경 ${watchCount} · ❌ 불참 ${skipCount}</div>`
+                        : '';
+                    rsvpEl.innerHTML = `
+                        ${summary}
+                        <div style="font-size:12px;font-weight:700;color:var(--ns-primary,#2e7d52);margin-bottom:6px;">내 참여 여부</div>
+                        <div class="rsvp-row">
+                            <button class="rsvp-btn r-play  ${myRsvp==='play' ?'selected':''}" onclick="submitRsvp(${match.id},'play')">✅<br>운동 참여</button>
+                            <button class="rsvp-btn r-watch ${myRsvp==='watch'?'selected':''}" onclick="submitRsvp(${match.id},'watch')">👀<br>구경만 할게요</button>
+                            <button class="rsvp-btn r-skip  ${myRsvp==='skip' ?'selected':''}" onclick="submitRsvp(${match.id},'skip')">❌<br>다음에 할게요</button>
+                        </div>`;
+                }
+            }
+
+            // 식사 RSVP 섹션
+            _renderBannerMealRsvp(match);
+        }
+
+        function _renderBannerMealRsvp(match) {
+            const el = document.getElementById('bannerMealRsvp');
+            if (!el || !currentUser) return;
+            const pid = currentUser.playerId ? String(currentUser.playerId) : null;
+            if (!match.meal || !match.meal.enabled || !pid) { el.innerHTML = ''; return; }
+
+            const myRsvp = (match.rsvp || {})[pid];
+            if (myRsvp !== 'play' && myRsvp !== 'watch') { el.innerHTML = ''; return; }
+
+            const mealRsvp = match.mealRsvp || {};
+            const myMeal   = mealRsvp[pid];
+            const yesCount = Object.values(mealRsvp).filter(v => v === 'yes').length;
+            const noCount  = Object.values(mealRsvp).filter(v => v === 'no').length;
+
+            let info = '';
+            if (match.meal.location || match.meal.menu) {
+                info = `<div style="font-size:12px;color:#7a5000;margin-bottom:8px;">`;
+                if (match.meal.location) info += `📍 ${match.meal.location}`;
+                if (match.meal.location && match.meal.menu) info += ` · `;
+                if (match.meal.menu) info += `🍽 ${match.meal.menu}`;
+                info += `</div>`;
+            }
+
+            el.innerHTML = `
+                <div class="meal-section">
+                    <div style="font-size:13px;font-weight:700;color:#7a5000;margin-bottom:4px;">🍽 운동 후 식사 자리가 있습니다!</div>
+                    <div style="font-size:12px;color:#a07000;margin-bottom:6px;">참석 ${yesCount}명 · 불참 ${noCount}명</div>
+                    ${info}
+                    <div class="meal-vote-row">
+                        <button class="meal-vote-btn meal-yes ${myMeal==='yes'?'selected':''}" onclick="submitMealRsvp(${match.id},'yes')">✅ 식사 참석</button>
+                        <button class="meal-vote-btn meal-no  ${myMeal==='no' ?'selected':''}" onclick="submitMealRsvp(${match.id},'no')">❌ 식사 불참</button>
+                    </div>
+                </div>`;
         }
 
         function dismissBanner() {
@@ -4039,7 +4271,7 @@
             if (Number(currentMatchId) === Number(matchId)) {
                 currentMatchId = null;
                 const panel = document.getElementById('attendancePanel');
-                if (panel) panel.innerHTML = '<p style="color:var(--ns-muted,#999); text-align:center; padding:40px 0; font-size:14px;">왼쪽에서 시합을 선택하세요.</p>';
+                if (panel) panel.innerHTML = '<p style="color:var(--ns-muted,#999); text-align:center; padding:40px 0; font-size:14px;">왼쪽에서 일정을 선택하세요.</p>';
             }
             const ann = DB.getAnnouncement();
             if (ann && Number(ann.matchId) === Number(matchId)) {
@@ -4048,6 +4280,96 @@
             }
             showMessage('일정이 삭제되었습니다.');
             renderMatchesTab();
+        }
+
+        // ===== RSVP 함수 =====
+        function submitRsvp(matchId, status) {
+            if (!currentUser || !currentUser.playerId) return;
+            const pid     = String(currentUser.playerId);
+            const matches = DB.getMatches();
+            const match   = matches.find(m => Number(m.id) === Number(matchId));
+            if (!match) return;
+            if (!match.rsvp) match.rsvp = {};
+
+            // 같은 버튼 다시 누르면 취소
+            if (match.rsvp[pid] === status) {
+                delete match.rsvp[pid];
+                // RSVP 취소 시 식사 응답도 제거
+                if (match.mealRsvp) delete match.mealRsvp[pid];
+            } else {
+                match.rsvp[pid] = status;
+                // '다음에'로 바꾸면 식사 응답 제거
+                if (status === 'skip' && match.mealRsvp) {
+                    delete match.mealRsvp[pid];
+                }
+            }
+
+            DB.setMatches(matches);
+            renderUpcomingBanner();
+            renderMatchesTab();
+            if (Number(currentMatchId) === Number(matchId)) renderAttendancePanel(matchId);
+        }
+
+        function submitMealRsvp(matchId, status) {
+            if (!currentUser || !currentUser.playerId) return;
+            const pid     = String(currentUser.playerId);
+            const matches = DB.getMatches();
+            const match   = matches.find(m => Number(m.id) === Number(matchId));
+            if (!match) return;
+
+            // 운동 참여 또는 구경 응답자만 투표 가능
+            const myRsvp = match.rsvp && match.rsvp[pid];
+            if (myRsvp !== 'play' && myRsvp !== 'watch') {
+                showMessage('운동 참여 또는 구경 중에서 먼저 선택해주세요.', 'warning');
+                return;
+            }
+
+            if (!match.mealRsvp) match.mealRsvp = {};
+            // 같은 버튼 다시 누르면 취소
+            if (match.mealRsvp[pid] === status) {
+                delete match.mealRsvp[pid];
+            } else {
+                match.mealRsvp[pid] = status;
+            }
+
+            DB.setMatches(matches);
+            renderUpcomingBanner();
+            if (Number(currentMatchId) === Number(matchId)) renderAttendancePanel(matchId);
+        }
+
+        // ===== 식사 관리 함수 (매니저) =====
+        function toggleMealEnabled(matchId) {
+            if (!currentUser || currentUser.role !== 'manager') return;
+            const matches = DB.getMatches();
+            const match   = matches.find(m => Number(m.id) === Number(matchId));
+            if (!match) return;
+            if (!match.meal) match.meal = {};
+            match.meal.enabled = !match.meal.enabled;
+            // 식사 비활성화 시 기존 식사 응답 초기화
+            if (!match.meal.enabled) match.mealRsvp = {};
+            DB.setMatches(matches);
+            renderAttendancePanel(matchId);
+            renderMatchesTab();
+            renderUpcomingBanner();
+        }
+
+        function saveMealInfo(matchId) {
+            if (!currentUser || currentUser.role !== 'manager') return;
+            const locEl  = document.getElementById('mealLocationInput');
+            const menuEl = document.getElementById('mealMenuInput');
+            if (!locEl || !menuEl) return;
+            const matches = DB.getMatches();
+            const match   = matches.find(m => Number(m.id) === Number(matchId));
+            if (!match) return;
+            if (!match.meal) match.meal = {};
+            match.meal.location = locEl.value.trim();
+            match.meal.menu     = menuEl.value.trim();
+            match.meal.enabled  = true;
+            DB.setMatches(matches);
+            showMessage('식사 정보가 저장되었습니다.');
+            renderAttendancePanel(matchId);
+            renderMatchesTab();
+            renderUpcomingBanner();
         }
 
         // 페이지 로드 시
