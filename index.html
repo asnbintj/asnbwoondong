@@ -1699,10 +1699,13 @@
                 </div>
                 <div id="statRequestsList"></div>
             </div>
-            <div class="form-section" style="margin-bottom: 20px;">
-                <h3>기본 선수 등록</h3>
-                <p style="color: #666; font-size: 14px; margin-bottom: 15px;">22명의 기본 선수를 한 번에 등록합니다. 이미 같은 이름의 선수가 있으면 건너뜁니다.</p>
-                <button class="btn btn-success" onclick="addDefaultPlayers()" style="width: auto; padding: 10px 25px;">👥 기본 선수 22명 등록</button>
+            <div class="form-section" id="mealLocationsSection" style="margin-bottom: 20px; display:none;">
+                <h3>🍽 자주 가는 식사 장소</h3>
+                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                    <input id="mealLocationAddInput" type="text" placeholder="장소명 입력 (예: 맛있는집)" onkeydown="if(event.key==='Enter')addMealLocation()" style="flex:1;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;">
+                    <button onclick="addMealLocation()" class="btn btn-success" style="width:auto;padding:9px 16px;font-size:13px;white-space:nowrap;">+ 추가</button>
+                </div>
+                <div id="mealLocationsList"></div>
             </div>
             <div class="form-section">
                 <h3>사용자 권한 · 정보 관리</h3>
@@ -2026,7 +2029,7 @@
         const fbDB = firebase.database();
 
         // 인메모리 캐시 (Firebase 데이터의 로컬 복사본)
-        const _cache = { users: [], players: [], teamResults: [], statRequests: [], matches: [], announcement: null };
+        const _cache = { users: [], players: [], teamResults: [], statRequests: [], matches: [], announcement: null, mealLocations: [] };
 
         function _toArray(val) {
             if (!val) return [];
@@ -2110,13 +2113,14 @@
                 });
                 if (gChanged) await fbDB.ref('players').set(_sanitize(_cache.players));
 
-                _cache.teamResults  = _toArray(allData.teamResults);
-                _cache.statRequests = _toArray(allData.statRequests);
-                _cache.matches      = _toArray(allData.matches);
-                _cache.announcement = allData.announcement || null;
+                _cache.teamResults    = _toArray(allData.teamResults);
+                _cache.statRequests  = _toArray(allData.statRequests);
+                _cache.matches       = _toArray(allData.matches);
+                _cache.announcement  = allData.announcement || null;
+                _cache.mealLocations = _toArray(allData.mealLocations);
 
                 // 실시간 리스너 설정 (첫 번째 이벤트는 이미 once()로 로드했으므로 건너뜀)
-                const skip = { users: true, players: true, teamResults: true, statRequests: true, matches: true, announcement: true };
+                const skip = { users: true, players: true, teamResults: true, statRequests: true, matches: true, announcement: true, mealLocations: true };
 
                 fbDB.ref('users').on('value', snap => {
                     if (skip.users) { skip.users = false; return; }
@@ -2165,6 +2169,12 @@
                     _cache.announcement = snap.val() || null;
                     if (currentUser) renderUpcomingBanner();
                 });
+
+                fbDB.ref('mealLocations').on('value', snap => {
+                    if (skip.mealLocations) { skip.mealLocations = false; return; }
+                    _cache.mealLocations = _toArray(snap.val());
+                    if (currentUser && currentUser.role === 'manager') renderMealLocations();
+                });
             },
 
             getUsers()            { return _cache.users; },
@@ -2177,8 +2187,10 @@
             setStatRequests(data) { _cache.statRequests = data;  fbDB.ref('statRequests').set(_sanitize(data)); },
             getMatches()          { return _cache.matches; },
             setMatches(data)      { _cache.matches = data;       fbDB.ref('matches').set(_sanitize(data)); },
-            getAnnouncement()     { return _cache.announcement; },
-            setAnnouncement(data) { _cache.announcement = data;  fbDB.ref('announcement').set(data ? _sanitize(data) : null); }
+            getAnnouncement()       { return _cache.announcement; },
+            setAnnouncement(data)   { _cache.announcement = data;  fbDB.ref('announcement').set(data ? _sanitize(data) : null); },
+            getMealLocations()      { return _cache.mealLocations; },
+            setMealLocations(data)  { _cache.mealLocations = data; fbDB.ref('mealLocations').set(_sanitize(data)); }
         };
 
         // ===== 전역 변수 =====
@@ -3135,8 +3147,17 @@
             modal.classList.add('active');
 
             setTimeout(() => {
-                playerCharts.soccer = createRadarChart('soccerChart', player.soccerStats, '⚽ 축구 능력치');
-                playerCharts.baseball = createRadarChart('baseballChart', player.baseballStats, '⚾ 야구 능력치');
+                const samePeers = DB.getPlayers().filter(p => p.active !== false && p.gender === player.gender);
+                const soccerAvg = {};
+                const baseballAvg = {};
+                Object.keys(player.soccerStats).forEach(k => {
+                    soccerAvg[k] = samePeers.reduce((s, p) => s + (p.soccerStats[k] || 0), 0) / (samePeers.length || 1);
+                });
+                Object.keys(player.baseballStats).forEach(k => {
+                    baseballAvg[k] = samePeers.reduce((s, p) => s + (p.baseballStats[k] || 0), 0) / (samePeers.length || 1);
+                });
+                playerCharts.soccer = createRadarChart('soccerChart', player.soccerStats, '⚽ 축구 능력치', soccerAvg);
+                playerCharts.baseball = createRadarChart('baseballChart', player.baseballStats, '⚾ 야구 능력치', baseballAvg);
             }, 10);
         }
 
@@ -3144,7 +3165,7 @@
             document.getElementById('playerModal').classList.remove('active');
         }
 
-        function createRadarChart(canvasId, stats, label) {
+        function createRadarChart(canvasId, stats, label, avgStats = null) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             const labels = Object.keys(stats);
             const data = Object.values(stats);
@@ -3152,32 +3173,40 @@
             const pointLabelSize = isMobile ? 10 : 12;
             const tickSize = isMobile ? 9 : 10;
 
+            const labelMap = {
+                'ballControl': '개인기', 'stamina': '지구력', 'defense': '수비력',
+                'dribble': '드리블', 'finishing': '골결정', 'contact': '컨택트',
+                'power': '파워', 'baseRunning': '주루', 'eyeContact': '선구안'
+            };
+
+            const datasets = [{
+                label: label,
+                data: data,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                borderWidth: 2,
+                pointRadius: 5,
+                pointBackgroundColor: '#667eea'
+            }];
+
+            if (avgStats) {
+                datasets.push({
+                    label: '성별 평균 능력치',
+                    data: Object.values(avgStats),
+                    borderColor: 'rgba(255, 145, 30, 0.65)',
+                    backgroundColor: 'rgba(255, 145, 30, 0.07)',
+                    borderWidth: 1.5,
+                    borderDash: [5, 4],
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(255, 145, 30, 0.55)'
+                });
+            }
+
             return new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: labels.map(l => {
-                        const labelMap = {
-                            'ballControl': '개인기',
-                            'stamina': '지구력',
-                            'defense': '수비력',
-                            'dribble': '드리블',
-                            'finishing': '골결정',
-                            'contact': '컨택트',
-                            'power': '파워',
-                            'baseRunning': '주루',
-                            'eyeContact': '선구안'
-                        };
-                        return labelMap[l] || l;
-                    }),
-                    datasets: [{
-                        label: label,
-                        data: data,
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
-                        borderWidth: 2,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#667eea'
-                    }]
+                    labels: labels.map(l => labelMap[l] || l),
+                    datasets
                 },
                 options: {
                     responsive: true,
@@ -3206,7 +3235,12 @@
                     },
                     plugins: {
                         legend: {
-                            display: false
+                            display: avgStats !== null,
+                            labels: {
+                                color: '#aaa',
+                                font: { size: 11 },
+                                boxWidth: 20
+                            }
                         }
                     }
                 }
@@ -3639,6 +3673,11 @@
         // ===== 권한 관리 =====
         function renderPermissionTab() {
             renderStatRequests();
+            if (currentUser && currentUser.role === 'manager') {
+                const sec = document.getElementById('mealLocationsSection');
+                if (sec) sec.style.display = '';
+                renderMealLocations();
+            }
             const users = DB.getUsers();
             const container = document.getElementById('usersList');
             container.innerHTML = '';
@@ -3656,6 +3695,7 @@
                         <option value="player" ${user.role === 'player' ? 'selected' : ''}>선수</option>
                     </select>
                     <button class="btn btn-secondary btn-small" onclick="openUserEditModal(${user.id})" style="width: auto; white-space: nowrap;">✏️ 정보 수정</button>
+                    ${(currentUser && user.id !== currentUser.id) ? `<button class="btn btn-small" onclick="deleteUser(${user.id})" style="width:auto; white-space:nowrap; background:#ff4757; color:white; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:13px; font-weight:600;">🗑️ 삭제</button>` : ''}
                 `;
                 container.appendChild(userDiv);
             });
@@ -3670,6 +3710,56 @@
                 showMessage('권한이 변경되었습니다.');
                 renderPermissionTab();
             }
+        }
+
+        function deleteUser(userId) {
+            if (!currentUser || currentUser.role !== 'manager') return;
+            if (currentUser.id === userId) { showMessage('현재 로그인된 계정은 삭제할 수 없습니다.', 'error'); return; }
+            const users = DB.getUsers();
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            if (!confirm(`'${user.username}' 계정을 삭제하시겠습니까?\n선수 데이터는 유지됩니다.`)) return;
+            DB.setUsers(users.filter(u => u.id !== userId));
+            showMessage(`'${user.username}' 계정이 삭제되었습니다.`);
+            renderPermissionTab();
+        }
+
+        // ===== 자주 가는 식사 장소 =====
+        function renderMealLocations() {
+            const list = document.getElementById('mealLocationsList');
+            if (!list) return;
+            const locs = DB.getMealLocations();
+            if (locs.length === 0) {
+                list.innerHTML = '<div style="color:#bbb;font-size:13px;padding:6px 0;">등록된 장소가 없습니다.</div>';
+                return;
+            }
+            list.innerHTML = locs.map(loc =>
+                `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:#f9f9f9;border-radius:8px;margin-bottom:7px;">
+                    <span style="font-size:14px;font-weight:600;color:#333;">${loc.name}</span>
+                    <button onclick="deleteMealLocation(${loc.id})" style="background:none;border:none;cursor:pointer;font-size:17px;color:#bbb;padding:2px 6px;line-height:1;" title="삭제">✕</button>
+                </div>`
+            ).join('');
+        }
+
+        function addMealLocation() {
+            if (!currentUser || currentUser.role !== 'manager') return;
+            const input = document.getElementById('mealLocationAddInput');
+            const name = input.value.trim();
+            if (!name) return;
+            const locs = DB.getMealLocations();
+            if (locs.some(l => l.name === name)) { showMessage('이미 등록된 장소입니다.', 'error'); return; }
+            const newId = Math.max(...locs.map(l => l.id), 0) + 1;
+            locs.push({ id: newId, name });
+            DB.setMealLocations(locs);
+            input.value = '';
+            renderMealLocations();
+        }
+
+        function deleteMealLocation(locId) {
+            if (!currentUser || currentUser.role !== 'manager') return;
+            const locs = DB.getMealLocations().filter(l => l.id !== locId);
+            DB.setMealLocations(locs);
+            renderMealLocations();
         }
 
         // ===== 사용자 정보 수정 =====
@@ -3731,48 +3821,6 @@
             closeUserEditModal();
             renderPermissionTab();
             renderPlayersList();
-        }
-
-        // ===== 기본 선수 일괄 등록 =====
-        function addDefaultPlayers() {
-            if (!confirm('기본 선수 22명을 등록하시겠습니까?\n이미 같은 이름의 선수는 건너뜁니다.\n기본 비밀번호: 1234')) return;
-
-            const players = DB.getPlayers();
-            const users = DB.getUsers();
-            const existingPlayerNames = new Set(players.map(p => p.name));
-            const existingUsernames = new Set(users.map(u => u.username));
-
-            let maxPlayerId = Math.max(...players.map(p => p.id), 0);
-            let maxUserId = Math.max(...users.map(u => u.id), 0);
-            let addedCount = 0;
-
-            DEFAULT_MEMBERS.forEach(m => {
-                maxPlayerId++;
-                maxUserId++;
-                const newPlayerId = maxPlayerId;
-                const newUserId = maxUserId;
-
-                if (!existingUsernames.has(m.name)) {
-                    users.push({ id: newUserId, username: m.name, password: '1234', role: 'player', playerId: newPlayerId });
-                }
-                if (!existingPlayerNames.has(m.name)) {
-                    const linkedUser = users.find(u => u.username === m.name);
-                    players.push({
-                        id: newPlayerId, name: m.name, gender: m.gender, photo: null,
-                        userId: linkedUser ? linkedUser.id : newUserId,
-                        soccerStats: { ballControl: 25, stamina: 25, defense: 25, dribble: 25, finishing: 25 },
-                        baseballStats: { contact: 25, defense: 25, power: 25, baseRunning: 25, eyeContact: 25 },
-                        soccerTotalStats: 125, baseballTotalStats: 125
-                    });
-                    addedCount++;
-                }
-            });
-
-            DB.setPlayers(players);
-            DB.setUsers(users);
-            showMessage(`${addedCount}명의 선수가 등록되었습니다.`);
-            renderPlayersList();
-            renderPermissionTab();
         }
 
         // ===== 팀 결과 이미지 클립보드 복사 =====
@@ -3992,6 +4040,7 @@
                     </div>
                     ${hasMeal ? `
                     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+                        ${DB.getMealLocations().length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:2px;">${DB.getMealLocations().map(l=>`<button onclick="document.getElementById('mealLocationInput').value='${l.name.replace(/'/g,"\\'")}'" style="padding:4px 10px;font-size:12px;border:1.5px solid rgba(200,130,0,0.4);border-radius:16px;background:rgba(255,248,210,0.9);color:#7a5000;cursor:pointer;font-family:inherit;font-weight:600;">${l.name}</button>`).join('')}</div>` : ''}
                         <input id="mealLocationInput" type="text" value="${loc}" placeholder="식사 장소 (예: 맛있는집)" style="padding:8px 12px;border:1.5px solid var(--ns-border,#ddd);border-radius:8px;font-size:13px;font-family:inherit;background:rgba(255,255,255,0.92);">
                         <input id="mealMenuInput" type="text" value="${menu}" placeholder="메뉴 (예: 삼겹살, 냉면)" style="padding:8px 12px;border:1.5px solid var(--ns-border,#ddd);border-radius:8px;font-size:13px;font-family:inherit;background:rgba(255,255,255,0.92);">
                         <button onclick="saveMealInfo(${matchId})" class="btn btn-success" style="width:auto;padding:7px 18px;font-size:13px;align-self:flex-start;">💾 저장</button>
@@ -4210,6 +4259,25 @@
                     const summary    = total > 0
                         ? `<div style="font-size:12px;color:var(--ns-muted,#888);margin-bottom:7px;">✅ 참여 ${playCount} · 👀 구경 ${watchCount} · ❌ 불참 ${skipCount}</div>`
                         : '';
+
+                    // 투표자 이름 목록
+                    const _players = DB.getPlayers();
+                    const _getName = id => { const p = _players.find(pl => String(pl.id) === String(id)); return p ? p.name : null; };
+                    const playNames  = Object.entries(rsvp).filter(([,v])=>v==='play').map(([k])=>_getName(k)).filter(Boolean);
+                    const watchNames = Object.entries(rsvp).filter(([,v])=>v==='watch').map(([k])=>_getName(k)).filter(Boolean);
+                    const skipNames  = Object.entries(rsvp).filter(([,v])=>v==='skip').map(([k])=>_getName(k)).filter(Boolean);
+                    const _nameRow = (emoji, names, color) => names.length
+                        ? `<div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:3px;">
+                            <span style="font-size:11px;flex-shrink:0;">${emoji}</span>
+                            <span style="font-size:11px;color:${color};line-height:1.6;">${names.join(' · ')}</span>
+                           </div>` : '';
+                    const nameSection = (playNames.length || watchNames.length || skipNames.length)
+                        ? `<div style="margin-top:9px;padding:8px 10px;background:rgba(0,0,0,0.04);border-radius:8px;">
+                            ${_nameRow('✅', playNames, '#1a7a00')}
+                            ${_nameRow('👀', watchNames, '#3a4ab0')}
+                            ${_nameRow('❌', skipNames, '#9b0000')}
+                           </div>` : '';
+
                     rsvpEl.innerHTML = `
                         ${summary}
                         <div style="font-size:12px;font-weight:700;color:var(--ns-primary,#2e7d52);margin-bottom:6px;">내 참여 여부</div>
@@ -4217,7 +4285,8 @@
                             <button class="rsvp-btn r-play  ${myRsvp==='play' ?'selected':''}" onclick="submitRsvp(${match.id},'play')">✅<br>운동 참여</button>
                             <button class="rsvp-btn r-watch ${myRsvp==='watch'?'selected':''}" onclick="submitRsvp(${match.id},'watch')">👀<br>구경만 할게요</button>
                             <button class="rsvp-btn r-skip  ${myRsvp==='skip' ?'selected':''}" onclick="submitRsvp(${match.id},'skip')">❌<br>다음에 할게요</button>
-                        </div>`;
+                        </div>
+                        ${nameSection}`;
                 }
             }
 
