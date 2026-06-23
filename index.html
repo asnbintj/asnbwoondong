@@ -2993,12 +2993,12 @@
             function makeCard(player, isInactive) {
                 const card = document.createElement('div');
                 card.className = `player-card ${player.gender === '남' ? 'male' : 'female'}`;
-                if (isInactive) card.style.cssText = 'opacity:0.45; filter:grayscale(55%);';
+                if (isInactive) card.style.cssText = '';
                 card.onclick = () => showPlayerModal(player);
                 const attInfo    = getThisMonthAttendance(player.id);
                 const attBadge   = attInfo ? `<div class="att-month-badge">📅 이달 ${attInfo.attended}/${attInfo.total}회</div>` : '';
                 const isMgr      = currentUser.role === 'manager';
-                const btnLabel   = isInactive ? '✅ 선수 배정' : '💤 응원단 배정';
+                const btnLabel   = isInactive ? '✅ 운동 참여선수로 이동' : '💤 응원단으로 이동';
                 const btnColor   = isInactive ? '#51cf66' : '#ff9800';
                 card.innerHTML = `
                     <div class="player-photo">
@@ -3071,8 +3071,8 @@
             player.active   = !wasActive;
             DB.setPlayers(players);
             showMessage(wasActive
-                ? `${player.name} 선수가 비활동 처리되었습니다.`
-                : `${player.name} 선수가 활동 선수로 복구되었습니다.`
+                ? `${player.name} 선수가 응원단으로 이동되었습니다.`
+                : `${player.name} 운동 참여 목록으로 이동되었습니다.`
             );
             renderPlayersList();
         }
@@ -3987,7 +3987,7 @@
                         <div style="font-size:14px;font-weight:700;color:var(--ns-text,#333);">🍽 식사 안내 설정</div>
                         <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ns-muted,#666);cursor:pointer;">
                             <input type="checkbox" id="mealEnabledChk" ${hasMeal?'checked':''} onchange="toggleMealEnabled(${matchId})" style="width:16px;height:16px;cursor:pointer;accent-color:var(--ns-primary,#2e7d52);">
-                            식사 자리 있음
+                            식사 마련 있음
                         </label>
                     </div>
                     ${hasMeal ? `
@@ -4012,7 +4012,7 @@
                 }
                 mealSection = `
                 <div class="meal-section">
-                    <div style="font-size:14px;font-weight:700;color:#7a5000;margin-bottom:4px;">🍽 운동 후 식사 자리가 있습니다!</div>
+                    <div style="font-size:14px;font-weight:700;color:#7a5000;margin-bottom:4px;">🍽 운동 후 식사 마련이 있습니다!</div>
                     <div style="font-size:12px;color:#a07000;margin-bottom:6px;">참석 ${mealYes}명 · 불참 ${mealNo}명</div>
                     ${mealInfo}
                     ${canVote ? `<div class="meal-vote-row">
@@ -4250,7 +4250,7 @@
 
             el.innerHTML = `
                 <div class="meal-section">
-                    <div style="font-size:13px;font-weight:700;color:#7a5000;margin-bottom:4px;">🍽 운동 후 식사 자리가 있습니다!</div>
+                    <div style="font-size:13px;font-weight:700;color:#7a5000;margin-bottom:4px;">🍽 운동 후 함께 식사 하실 분!</div>
                     <div style="font-size:12px;color:#a07000;margin-bottom:6px;">참석 ${yesCount}명 · 불참 ${noCount}명</div>
                     ${info}
                     <div class="meal-vote-row">
