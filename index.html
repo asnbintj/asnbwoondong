@@ -2718,6 +2718,18 @@
                 localStorage.removeItem('savedLogin');
             }
 
+            // playerId 미설정 시 이름이 같은 선수와 자동 연결
+            if (!matchedUser.playerId) {
+                const players = DB.getPlayers();
+                const linked = players.find(p => p.name === matchedUser.username);
+                if (linked) {
+                    matchedUser.playerId = linked.id;
+                    const allUsers = DB.getUsers();
+                    const idx = allUsers.findIndex(u => u.id === matchedUser.id);
+                    if (idx !== -1) { allUsers[idx].playerId = linked.id; DB.setUsers(allUsers); }
+                }
+            }
+
             currentUser = matchedUser;
             showMainApp();
             showMessage(`${matchedUser.username}님 환영합니다!`);
@@ -2976,7 +2988,20 @@
 
             players.push(newPlayer);
             DB.setPlayers(players);
-            showMessage('선수가 추가되었습니다.');
+
+            // 같은 이름의 사용자 계정이 없으면 자동 생성
+            const users = DB.getUsers();
+            const existingUser = users.find(u => u.username === name);
+            if (!existingUser) {
+                const newUserId = Math.max(...users.map(u => u.id), 0) + 1;
+                users.push({ id: newUserId, username: name, password: '1234', role: 'player', playerId: newPlayer.id });
+                DB.setUsers(users);
+            } else if (!existingUser.playerId) {
+                existingUser.playerId = newPlayer.id;
+                DB.setUsers(users);
+            }
+
+            showMessage(`선수가 추가되었습니다. 로그인 아이디: ${name} / 초기 비밀번호: 1234`);
             cancelAddPlayer();
             renderPlayersList();
         }
@@ -3112,7 +3137,7 @@
                         <button onclick="saveNickname(${player.id})" style="background:#667eea; color:white; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">저장</button>
                         <button onclick="cancelEditNickname()" style="background:#f0f0f0; color:#333; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; margin-left:4px;">취소</button>
                     </div>
-                    ${(currentUser.role !== 'manager' && (player.id === currentUser.playerId || player.userId === currentUser.id)) ? `
+                    ${(currentUser.role !== 'manager' && (player.id === currentUser.playerId || player.userId === currentUser.id || currentUser.username === player.name)) ? `
                     <button onclick="openStatRequestModal(${player.id})" style="margin-top:14px; background:#fff3cd; color:#856404; border:2px solid #ffc107; padding:9px 20px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">📝 능력치 수정 요청</button>
                     ` : ''}
                 </div>
