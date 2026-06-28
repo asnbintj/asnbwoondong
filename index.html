@@ -568,22 +568,25 @@
 
         .position {
             background: rgba(255, 255, 255, 0.9);
-            padding: 15px;
+            padding: 10px 14px;
             border-radius: 8px;
-            text-align: center;
             border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .position-label {
-            font-weight: 600;
+            font-weight: 700;
             color: #667eea;
-            margin-bottom: 10px;
-            font-size: 14px;
+            font-size: 13px;
+            white-space: nowrap;
+            min-width: 72px;
         }
 
         .position-selector {
-            width: 100%;
-            padding: 8px;
+            flex: 1;
+            padding: 7px 8px;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 13px;
@@ -592,15 +595,15 @@
         .position-player {
             background: white;
             border: 2px solid #667eea;
-            padding: 10px;
+            padding: 7px 10px;
             border-radius: 6px;
-            margin-top: 10px;
             font-weight: 600;
             color: #667eea;
             font-size: 13px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex: 1;
         }
 
         .position-remove {
@@ -1665,9 +1668,7 @@
                 <h3>2단계: 스포츠 선택</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
                     <button class="btn btn-primary" onclick="startTeamDivide('soccer', 2)">⚽ 축구 (2팀)</button>
-                    <button class="btn btn-primary" onclick="startTeamDivide('soccer', 3)">⚽ 축구 (3팀)</button>
                     <button class="btn btn-primary" onclick="startTeamDivide('baseball', 2)">⚾ 야구 (2팀)</button>
-                    <button class="btn btn-primary" onclick="startTeamDivide('baseball', 3)">⚾ 야구 (3팀)</button>
                 </div>
             </div>
 
@@ -3578,15 +3579,16 @@
 
                     posEl.innerHTML = `
                         <div class="position-label">${pos.label}</div>
-                        <select class="position-selector" onchange="assignPosition(${teamIdx}, '${pos.key}', this.value)">
-                            ${optionsHtml}
-                        </select>
                         ${assignedPlayer ? `
                             <div class="position-player">
                                 <span>${assignedPlayer.name}</span>
                                 <button class="position-remove" onclick="removePosition(${teamIdx}, '${pos.key}')">✕</button>
                             </div>
-                        ` : ''}
+                        ` : `
+                            <select class="position-selector" onchange="assignPosition(${teamIdx}, '${pos.key}', this.value)">
+                                ${optionsHtml}
+                            </select>
+                        `}
                     `;
 
                     if (assigned) {
