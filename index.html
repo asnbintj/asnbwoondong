@@ -1686,6 +1686,8 @@
                     <div id="unassignedPlayersSection" style="display: none;"></div>
                 </div>
 
+                <div id="battingOrderSection" style="display:none;"></div>
+
                 <div class="button-group" style="margin-top: 30px;">
                     <button class="btn btn-primary" onclick="completeTeamDivide()">✅ 저장</button>
                     <button class="btn btn-success" onclick="copyTeamResultToClipboard()" id="copyBtn">📋 이미지로 복사</button>
@@ -3532,8 +3534,10 @@
             if (sport === 'baseball') {
                 baseballSection.style.display = 'block';
                 renderBaseballFields();
+                renderBattingOrder();
             } else {
                 baseballSection.style.display = 'none';
+                document.getElementById('battingOrderSection').style.display = 'none';
             }
         }
 
@@ -3677,7 +3681,8 @@
                     totalStats: team.totalStats,
                     male: team.male,
                     female: team.female,
-                    assignments: team.assignments || {}
+                    assignments: team.assignments || {},
+                    battingOrder: team.battingOrder || []
                 })),
                 createdAt: new Date().toISOString()
             };
@@ -3694,6 +3699,7 @@
             document.getElementById('teamResultsSection').style.display = 'none';
             document.getElementById('selectedPlayersSection').classList.add('hidden');
             document.getElementById('teamDivideOptions').style.display = 'none';
+            document.getElementById('battingOrderSection').style.display = 'none';
             renderPlayerSelectionList();
             updateSelectedPlayersDisplay();
         }
@@ -3797,6 +3803,88 @@
             currentTeamDivideData = { ...currentTeamDivideData, teams: newTeams };
             renderTeamResults();
             showMessage(`🔀 팀을 다시 섞었습니다! (${moveCount}명 재배치)`);
+        }
+
+        // ===== 타순 설정 =====
+        function renderBattingOrder() {
+            const { teams } = currentTeamDivideData;
+            const section = document.getElementById('battingOrderSection');
+            if (!section) return;
+            section.style.display = 'block';
+
+            const teamsHtml = teams.map((team, ti) => {
+                const order = team.battingOrder || [];
+                const nameEl = document.getElementById(`teamName-${ti}`);
+                const teamName = nameEl ? nameEl.value : `팀 ${String.fromCharCode(65 + ti)}`;
+
+                const cardsHtml = team.players.map(p => {
+                    const orderIdx = order.indexOf(p.id);
+                    const isAssigned = orderIdx !== -1;
+                    return `<div class="attendance-item${isAssigned ? ' present' : ''}" onclick="toggleBattingOrder(${ti}, ${p.id})">
+                        <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--ns-bg,#eee);">
+                            ${p.photo ? `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;">` : '📸'}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+                            <div style="font-size:11px;color:var(--ns-muted,#888);">${p.gender}</div>
+                        </div>
+                        <span style="min-width:34px;text-align:center;font-size:13px;font-weight:800;color:${isAssigned ? 'var(--ns-primary,#2e7d52)' : 'var(--ns-dim,#ccc)'};">
+                            ${isAssigned ? `${orderIdx + 1}번` : '—'}
+                        </span>
+                    </div>`;
+                }).join('');
+
+                const orderSummary = order.length > 0 ? `
+                    <div style="margin-top:10px;padding:10px 14px;background:rgba(46,125,87,0.07);border:1px solid var(--ns-border,#ddd);border-radius:8px;">
+                        <div style="font-size:11px;font-weight:700;color:var(--ns-primary,#2e7d52);margin-bottom:7px;">⚾ ${teamName} 타순 확인</div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            ${order.map((pid, i) => {
+                                const pl = team.players.find(p => p.id === pid);
+                                return pl ? `<div style="font-size:13px;display:flex;align-items:center;gap:8px;">
+                                    <span style="font-weight:800;color:var(--ns-accent,#e09618);min-width:28px;">${i + 1}번</span>
+                                    <span style="color:var(--ns-text,#333);">${pl.name}</span>
+                                    <span style="font-size:11px;color:var(--ns-muted,#888);">${pl.gender}</span>
+                                </div>` : '';
+                            }).join('')}
+                        </div>
+                    </div>` : '';
+
+                return `<div>
+                    <div style="font-size:14px;font-weight:700;color:var(--ns-text,#333);margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                        ${teamName}
+                        <span style="font-size:12px;font-weight:400;color:var(--ns-muted,#999);">${order.length}/${team.players.length}명 배정</span>
+                        ${order.length > 0 ? `<button onclick="clearBattingOrder(${ti})" style="background:none;border:1px solid var(--ns-border,#ddd);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;color:var(--ns-muted,#999);font-family:inherit;">초기화</button>` : ''}
+                    </div>
+                    <div class="attendance-grid">${cardsHtml}</div>
+                    ${orderSummary}
+                </div>`;
+            }).join('');
+
+            section.innerHTML = `
+                <div style="margin-top:28px;padding-top:22px;border-top:1px solid var(--ns-border,#ddd);">
+                    <h3 style="margin-bottom:6px;">⚾ 타순 설정</h3>
+                    <p style="font-size:13px;color:var(--ns-muted,#888);margin-bottom:16px;">선수를 순서대로 클릭하면 타순이 배정됩니다. 배정된 선수를 다시 클릭하면 취소됩니다.</p>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
+                        ${teamsHtml}
+                    </div>
+                </div>`;
+        }
+
+        function toggleBattingOrder(teamIdx, playerId) {
+            const team = currentTeamDivideData.teams[teamIdx];
+            if (!team.battingOrder) team.battingOrder = [];
+            const idx = team.battingOrder.indexOf(playerId);
+            if (idx !== -1) {
+                team.battingOrder.splice(idx, 1);
+            } else {
+                team.battingOrder.push(playerId);
+            }
+            renderBattingOrder();
+        }
+
+        function clearBattingOrder(teamIdx) {
+            currentTeamDivideData.teams[teamIdx].battingOrder = [];
+            renderBattingOrder();
         }
 
         // ===== 권한 관리 =====
