@@ -1,8 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="안성남부">
+    <meta name="theme-color" content="#2e7d52">
+    <link rel="manifest" href="/manifest.json">
     <title>안성남부 회중 </title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1462,6 +1467,9 @@
             </div>
             <button class="btn btn-primary" onclick="login()">로그인</button>
             <button class="btn btn-secondary" onclick="showSignup()">회원가입</button>
+            <div style="text-align:center; margin-top:18px; padding-top:16px; border-top:1px solid #eee;">
+                <button onclick="handlePwaInstall()" style="background:none; border:none; color:#4d7a5e; font-size:13px; cursor:pointer; font-family:inherit;">📱 홈 화면에 추가하기</button>
+            </div>
         </div>
     </div>
 
@@ -1493,6 +1501,7 @@
                     <span id="currentRole">역할</span>
                 </div>
                 <button class="btn btn-secondary" onclick="logout()" style="width: auto; padding: 10px 20px;">로그아웃</button>
+                <button id="pwaInstallBtn" onclick="handlePwaInstall()" style="display:none; width:auto; padding:10px 16px; background:linear-gradient(135deg,#2e7d52,#1a5c38); color:white; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit;">📱 홈 화면 추가</button>
             </div>
         </div>
 
@@ -2000,6 +2009,17 @@
                 <button class="btn btn-primary" onclick="submitStatRequest()">📤 요청 제출</button>
                 <button class="btn btn-secondary" onclick="closeStatRequestModal()">취소</button>
             </div>
+        </div>
+    </div>
+
+    <!-- PWA 홈 화면 추가 안내 모달 -->
+    <div id="pwaInstallModal" class="modal">
+        <div class="modal-content" style="max-width:380px;">
+            <div class="modal-header">
+                <h2>📱 홈 화면에 추가</h2>
+                <button class="close-btn" onclick="closePwaInstallModal()">&times;</button>
+            </div>
+            <div id="pwaInstallContent"></div>
         </div>
     </div>
 
@@ -4846,6 +4866,129 @@
             renderUpcomingBanner();
         }
 
+        // ===== PWA — 서비스 워커 등록 =====
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+
+        // ===== PWA — 홈 화면에 추가 =====
+        let _pwaInstallPrompt = null;
+
+        (function injectPwaManifest() {
+            const manifest = {
+                name: '안성남부 회중 팀나누기',
+                short_name: '안성남부',
+                description: '안성남부 회중 팀 나누기 앱',
+                start_url: window.location.href,
+                display: 'standalone',
+                orientation: 'portrait-primary',
+                background_color: '#c8e6c9',
+                theme_color: '#2e7d52',
+                icons: [{
+                    src: "data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Ctext%20y%3D'.9em'%20font-size%3D'90'%3E%E2%9A%BD%3C%2Ftext%3E%3C%2Fsvg%3E",
+                    sizes: '192x192',
+                    type: 'image/svg+xml'
+                }]
+            };
+            try {
+                const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+                const link = document.createElement('link');
+                link.rel = 'manifest';
+                link.href = URL.createObjectURL(blob);
+                document.head.appendChild(link);
+            } catch (e) {}
+        })();
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            _pwaInstallPrompt = e;
+            const btn = document.getElementById('pwaInstallBtn');
+            if (btn) btn.style.display = 'inline-block';
+        });
+
+        window.addEventListener('appinstalled', () => {
+            _pwaInstallPrompt = null;
+            const btn = document.getElementById('pwaInstallBtn');
+            if (btn) btn.style.display = 'none';
+            showMessage('앱이 홈 화면에 추가되었습니다! 🎉');
+        });
+
+        function _initPwaButton() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                              || window.navigator.standalone === true;
+            if (isStandalone) return;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                const btn = document.getElementById('pwaInstallBtn');
+                if (btn) btn.style.display = 'inline-block';
+            }
+        }
+
+        async function handlePwaInstall() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                              || window.navigator.standalone === true;
+            if (isStandalone) {
+                showMessage('이미 홈 화면에 추가되어 있습니다!');
+                return;
+            }
+            if (_pwaInstallPrompt) {
+                _pwaInstallPrompt.prompt();
+                const { outcome } = await _pwaInstallPrompt.userChoice;
+                _pwaInstallPrompt = null;
+                if (outcome === 'accepted') {
+                    const btn = document.getElementById('pwaInstallBtn');
+                    if (btn) btn.style.display = 'none';
+                }
+                return;
+            }
+            showPwaInstallModal();
+        }
+
+        function showPwaInstallModal() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isAndroid = /Android/.test(navigator.userAgent);
+            const steps = (arr) => arr.map((t, i) =>
+                `<div style="display:flex;gap:12px;align-items:flex-start;${i<arr.length-1?'margin-bottom:12px;':''}">
+                    <span style="background:var(--ns-primary,#2e7d52);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">${i+1}</span>
+                    <span style="font-size:14px;color:var(--ns-text,#333);line-height:1.6;">${t}</span>
+                </div>`).join('');
+
+            let html = '';
+            if (isIOS) {
+                html = `<div style="padding:8px 0 20px;text-align:center;">
+                    <div style="font-size:44px;margin-bottom:14px;">📱</div>
+                    <p style="color:var(--ns-muted,#666);margin-bottom:18px;line-height:1.8;font-size:14px;">Safari에서 아래 순서대로 진행하면<br>홈 화면에 앱 아이콘이 생깁니다.</p>
+                    <div style="background:rgba(46,125,87,0.06);border:1px solid rgba(46,125,87,0.2);border-radius:12px;padding:18px;text-align:left;">
+                        ${steps(['하단 툴바의 <strong>공유 버튼 (□↑)</strong> 탭', '"<strong>홈 화면에 추가</strong>" 선택', '오른쪽 위 <strong>"추가"</strong> 탭'])}
+                    </div>
+                </div>`;
+            } else if (isAndroid) {
+                html = `<div style="padding:8px 0 20px;text-align:center;">
+                    <div style="font-size:44px;margin-bottom:14px;">📱</div>
+                    <p style="color:var(--ns-muted,#666);margin-bottom:18px;line-height:1.8;font-size:14px;">Chrome에서 아래 순서대로 진행하세요.</p>
+                    <div style="background:rgba(46,125,87,0.06);border:1px solid rgba(46,125,87,0.2);border-radius:12px;padding:18px;text-align:left;">
+                        ${steps(['Chrome 우측 상단 <strong>메뉴 (⋮)</strong> 탭', '<strong>"앱 설치"</strong> 또는 <strong>"홈 화면에 추가"</strong> 선택', '<strong>"설치"</strong> 또는 <strong>"추가"</strong> 탭하면 완료!'])}
+                    </div>
+                </div>`;
+            } else {
+                html = `<div style="padding:8px 0 20px;text-align:center;">
+                    <div style="font-size:44px;margin-bottom:14px;">💻</div>
+                    <p style="color:var(--ns-muted,#666);line-height:1.8;font-size:14px;">
+                        Chrome 주소창 오른쪽의 <strong>설치 아이콘 (⊕)</strong>을 클릭하거나,<br>
+                        Chrome 메뉴 → <strong>"앱 설치"</strong>를 선택하세요.
+                    </p>
+                </div>`;
+            }
+            document.getElementById('pwaInstallContent').innerHTML = html;
+            document.getElementById('pwaInstallModal').classList.add('active');
+        }
+
+        function closePwaInstallModal() {
+            document.getElementById('pwaInstallModal').classList.remove('active');
+        }
+
         // 페이지 로드 시
         document.addEventListener('paste', function(e) {
             const form = document.getElementById('addPlayerForm');
@@ -4865,6 +5008,7 @@
             try {
                 await DB.init();
                 document.getElementById('firebaseLoadingScreen').style.display = 'none';
+                _initPwaButton();
                 const saved = localStorage.getItem('savedLogin');
                 if (saved) {
                     try {
